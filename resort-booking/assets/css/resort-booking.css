@@ -1,0 +1,22 @@
+.resort-booking-form {
+border: 1px solid #ddd;
+padding: 16px;
+margin: 12px 0;
+background: #fafafa;
+}
+
+.resort-booking-note {
+color: #555;
+font-size: 13px;
+}
+
+.resort-booking-checkout {
+padding: 12px;
+border: 1px solid #e2e2e2;
+margin-bottom: 16px;
+background: #fff;
+}
+
+.resort-summary {
+font-weight: 600;
+}
