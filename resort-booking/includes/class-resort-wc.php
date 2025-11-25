@@ -409,13 +409,29 @@ die();
  *
  * @return WC_Product|null
  */
-private function get_cart_product() {
-$cart = WC()->cart;
-if ( ! $cart || empty( $cart->get_cart() ) ) {
-return null;
-}
-$items = $cart->get_cart();
-$first = reset( $items );
-return isset( $first['data'] ) ? $first['data'] : null;
-}
+    private function get_cart_product() {
+        $cart = WC()->cart;
+
+        if ( ! $cart || $cart->is_empty() ) {
+            return null;
+        }
+
+        foreach ( $cart->get_cart() as $cart_item ) {
+            if ( empty( $cart_item['data'] ) || ! $cart_item['data'] instanceof WC_Product ) {
+                continue;
+            }
+
+            $product    = $cart_item['data'];
+            $accoms     = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+            $accoms     = is_array( $accoms ) ? $accoms : array();
+            $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+            $meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+
+            if ( ! empty( $accoms ) || $meta_adult > 0 || $meta_child > 0 ) {
+                return $product;
+            }
+        }
+
+        return null;
+    }
 }
