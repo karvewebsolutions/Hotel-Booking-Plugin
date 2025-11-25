@@ -43,31 +43,38 @@ if ( ! isset( $_POST['resort_booking_nonce'] ) || ! wp_verify_nonce( sanitize_te
 return;
 }
 
-$product_id = isset( $_POST['resort_booking_product_id'] ) ? absint( $_POST['resort_booking_product_id'] ) : 0;
-$date       = isset( $_POST['resort_booking_date'] ) ? sanitize_text_field( wp_unslash( $_POST['resort_booking_date'] ) ) : '';
-$forced     = get_post_meta( $product_id, '_resort_forced_date', true );
-$disable    = get_post_meta( $product_id, '_resort_disable_date_selection', true );
-$blocked    = get_post_meta( $product_id, '_resort_blocked_dates', true );
-$blocked    = is_array( $blocked ) ? $blocked : array();
+	$product_id = isset( $_POST['resort_booking_product_id'] ) ? absint( $_POST['resort_booking_product_id'] ) : 0;
+	$date       = isset( $_POST['resort_booking_date'] ) ? sanitize_text_field( wp_unslash( $_POST['resort_booking_date'] ) ) : '';
+	$forced     = get_post_meta( $product_id, '_resort_forced_date', true );
+	$disable    = get_post_meta( $product_id, '_resort_disable_date_selection', true );
+	$blocked    = get_post_meta( $product_id, '_resort_blocked_dates', true );
+	$accoms     = get_post_meta( $product_id, '_resort_accommodations', true );
+	$blocked    = is_array( $blocked ) ? $blocked : array();
+	$accoms     = is_array( $accoms ) ? $accoms : array();
+	$default_accom = ( ! empty( $accoms ) && isset( $accoms[0]['name'] ) ) ? sanitize_text_field( $accoms[0]['name'] ) : '';
 
-if ( $disable && $forced ) {
-$date = $forced;
-} elseif ( in_array( $date, $blocked, true ) ) {
-wc_add_notice( esc_html__( 'Selected date is unavailable.', 'resort-booking' ), 'error' );
+	if ( $disable && $forced ) {
+	$date = $forced;
+	} elseif ( in_array( $date, $blocked, true ) ) {
+	wc_add_notice( esc_html__( 'Selected date is unavailable.', 'resort-booking' ), 'error' );
 return;
 }
 
 if ( ! $product_id || empty( $date ) ) {
 wc_add_notice( esc_html__( 'Booking requires a date.', 'resort-booking' ), 'error' );
 return;
-}
+	}
 
-WC()->cart->empty_cart();
-WC()->session->set( 'resort_booking_date', $date );
-WC()->cart->add_to_cart( $product_id );
-wp_safe_redirect( wc_get_checkout_url() );
-exit;
-}
+	WC()->cart->empty_cart();
+	WC()->session->set( 'resort_booking_date', $date );
+	WC()->session->set( 'resort_booking_accommodation', $default_accom );
+	WC()->session->set( 'resort_booking_adults', 1 );
+	WC()->session->set( 'resort_booking_children', 0 );
+	WC()->session->set( 'resort_payment_option', 'full' );
+	WC()->cart->add_to_cart( $product_id );
+	wp_safe_redirect( wc_get_checkout_url() );
+	exit;
+	}
 
 /**
  * Render custom checkout fields.
@@ -75,49 +82,54 @@ exit;
  * @param WC_Checkout $checkout Checkout object.
  */
 public function render_checkout_fields( $checkout ) {
-$date   = WC()->session->get( 'resort_booking_date' );
-$product = $this->get_cart_product();
-$forced = $product ? get_post_meta( $product->get_id(), '_resort_forced_date', true ) : '';
-$has_forced_date = ! empty( $forced );
-$accom  = $product ? get_post_meta( $product->get_id(), '_resort_accommodations', true ) : array();
-$accom  = is_array( $accom ) ? $accom : array();
-$default_accom = $has_forced_date && ! empty( $accom ) && isset( $accom[0]['name'] ) ? $accom[0]['name'] : '';
-?>
-<div class="resort-booking-checkout">
-<h3><?php esc_html_e( 'Resort Booking Details', 'resort-booking' ); ?></h3>
-<p class="form-row form-row-wide">
-<label><?php esc_html_e( 'Booking date', 'resort-booking' ); ?></label>
+	$date   = WC()->session->get( 'resort_booking_date' );
+	$product = $this->get_cart_product();
+	$forced = $product ? get_post_meta( $product->get_id(), '_resort_forced_date', true ) : '';
+	$has_forced_date = ! empty( $forced );
+	$accom  = $product ? get_post_meta( $product->get_id(), '_resort_accommodations', true ) : array();
+	$accom  = is_array( $accom ) ? $accom : array();
+	$default_accom = $has_forced_date && ! empty( $accom ) && isset( $accom[0]['name'] ) ? $accom[0]['name'] : '';
+	$session_accom = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
+	$selected_accom = $session_accom ? $session_accom : $default_accom;
+	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
+	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
+	$payment_option = sanitize_text_field( WC()->session->get( 'resort_payment_option', 'full' ) );
+	?>
+	<div class="resort-booking-checkout">
+	<h3><?php esc_html_e( 'Resort Booking Details', 'resort-booking' ); ?></h3>
+	<p class="form-row form-row-wide">
+	<label><?php esc_html_e( 'Booking date', 'resort-booking' ); ?></label>
 <input type="text" name="resort_booking_date" value="<?php echo esc_attr( $date ); ?>" readonly />
 </p>
 <?php if ( ! $has_forced_date ) : ?>
-<p class="form-row form-row-first">
-<label for="resort_booking_accommodation"><?php esc_html_e( 'Accommodation', 'resort-booking' ); ?></label>
-<select name="resort_booking_accommodation" id="resort_booking_accommodation">
-<option value=""><?php esc_html_e( 'Select option', 'resort-booking' ); ?></option>
-<?php foreach ( $accom as $row ) : ?>
-<option value="<?php echo esc_attr( $row['name'] ); ?>" data-adult="<?php echo esc_attr( $row['adult'] ); ?>" data-child="<?php echo esc_attr( $row['child'] ); ?>"><?php echo esc_html( $row['name'] ); ?></option>
-<?php endforeach; ?>
-</select>
-</p>
-<?php else : ?>
-    <?php if ( $default_accom ) : ?>
-        <input type="hidden" name="resort_booking_accommodation" value="<?php echo esc_attr( $default_accom ); ?>" />
-    <?php endif; ?>
-<?php endif; ?>
-<p class="form-row form-row-last">
-<label for="resort_booking_adults"><?php esc_html_e( 'Adults', 'resort-booking' ); ?></label>
-<input type="number" min="1" name="resort_booking_adults" id="resort_booking_adults" value="1" />
-</p>
-<p class="form-row form-row-first">
-<label for="resort_booking_children"><?php esc_html_e( 'Children', 'resort-booking' ); ?></label>
-<input type="number" min="0" name="resort_booking_children" id="resort_booking_children" value="0" />
-</p>
-<p class="form-row form-row-last">
-<label><?php esc_html_e( 'Payment option', 'resort-booking' ); ?></label><br />
-<label><input type="radio" name="resort_payment_option" value="full" checked /> <?php esc_html_e( 'Pay Full Amount', 'resort-booking' ); ?></label><br />
-<label><input type="radio" name="resort_payment_option" value="deposit" /> <?php esc_html_e( 'Pay 50% Deposit', 'resort-booking' ); ?></label>
-</p>
-</div>
+	<p class="form-row form-row-first">
+	<label for="resort_booking_accommodation"><?php esc_html_e( 'Accommodation', 'resort-booking' ); ?></label>
+	<select name="resort_booking_accommodation" id="resort_booking_accommodation" class="input-text">
+	<option value=""><?php esc_html_e( 'Select option', 'resort-booking' ); ?></option>
+	<?php foreach ( $accom as $row ) : ?>
+	<option value="<?php echo esc_attr( $row['name'] ); ?>" <?php selected( $selected_accom, $row['name'] ); ?> data-adult="<?php echo esc_attr( $row['adult'] ); ?>" data-child="<?php echo esc_attr( $row['child'] ); ?>"><?php echo esc_html( $row['name'] ); ?></option>
+	<?php endforeach; ?>
+	</select>
+	</p>
+	<?php else : ?>
+	    <?php if ( $default_accom ) : ?>
+	        <input type="hidden" name="resort_booking_accommodation" value="<?php echo esc_attr( $selected_accom ); ?>" />
+	    <?php endif; ?>
+	<?php endif; ?>
+	<p class="form-row form-row-last">
+	<label for="resort_booking_adults"><?php esc_html_e( 'Adults', 'resort-booking' ); ?></label>
+	<input type="number" min="1" name="resort_booking_adults" id="resort_booking_adults" value="<?php echo esc_attr( $adults ); ?>" class="input-text" />
+	</p>
+	<p class="form-row form-row-first">
+	<label for="resort_booking_children"><?php esc_html_e( 'Children', 'resort-booking' ); ?></label>
+	<input type="number" min="0" name="resort_booking_children" id="resort_booking_children" value="<?php echo esc_attr( $children ); ?>" class="input-text" />
+	</p>
+	<p class="form-row form-row-last">
+	<label><?php esc_html_e( 'Payment option', 'resort-booking' ); ?></label><br />
+	<label><input type="radio" name="resort_payment_option" value="full" <?php checked( $payment_option, 'full' ); ?> /> <?php esc_html_e( 'Pay Full Amount', 'resort-booking' ); ?></label><br />
+	<label><input type="radio" name="resort_payment_option" value="deposit" <?php checked( $payment_option, 'deposit' ); ?> /> <?php esc_html_e( 'Pay 50% Deposit', 'resort-booking' ); ?></label>
+	</p>
+	</div>
 <?php
 }
 
@@ -225,17 +237,29 @@ WC()->session->set( 'resort_booking_accommodation', $selected );
 $payment  = sanitize_text_field( WC()->session->get( 'resort_payment_option', 'full' ) );
 
 $adult_rate = 0;
-$child_rate = 0;
-foreach ( $accoms as $row ) {
-if ( isset( $row['name'] ) && $selected === $row['name'] ) {
-$adult_rate = floatval( $row['adult'] );
-$child_rate = floatval( $row['child'] );
-}
-}
+	$child_rate = 0;
+	foreach ( $accoms as $row ) {
+	if ( isset( $row['name'] ) && $selected === $row['name'] ) {
+	$adult_rate = floatval( $row['adult'] );
+	$child_rate = floatval( $row['child'] );
+	break;
+	}
+	}
 
-$total = ( $adults * $adult_rate ) + ( $children * $child_rate );
-$fee   = ( 'deposit' === $payment ) ? $total * 0.5 : $total;
-$remaining = ( 'deposit' === $payment ) ? $total - $fee : 0;
+	// Fallback to first accommodation if none matched.
+	if ( ( 0 === $adult_rate && 0 === $child_rate ) && ! empty( $accoms ) && isset( $accoms[0]['adult'], $accoms[0]['child'] ) ) {
+	$adult_rate = floatval( $accoms[0]['adult'] );
+	$child_rate = floatval( $accoms[0]['child'] );
+	}
+
+	// As a last resort use product price to avoid a zero-fee experience.
+	if ( 0 === $adult_rate ) {
+	$adult_rate = floatval( $product->get_price() );
+	}
+
+	$total = ( $adults * $adult_rate ) + ( $children * $child_rate );
+	$fee   = ( 'deposit' === $payment ) ? $total * 0.5 : $total;
+	$remaining = ( 'deposit' === $payment ) ? $total - $fee : 0;
 
 WC()->session->set( 'resort_remaining_balance', $remaining );
 
