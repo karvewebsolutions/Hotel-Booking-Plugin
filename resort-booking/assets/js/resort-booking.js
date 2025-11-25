@@ -56,7 +56,7 @@ $( this ).closest( '.resort-blocked-row' ).remove();
 
 $( function() {
 initDatepicker();
-$( document.body ).on( 'change', '#resort_booking_accommodation, #resort_booking_adults, #resort_booking_children, input[name="resort_payment_option"]', syncToSession );
+$( document.body ).on( 'input change', '#resort_booking_accommodation, #resort_booking_adults, #resort_booking_children, input[name="resort_payment_option"]', syncToSession );
 $( document.body ).on( 'updated_checkout', reloadSummary );
 if ( $( '.resort-booking-checkout' ).length ) {
 triggerOnLoad();

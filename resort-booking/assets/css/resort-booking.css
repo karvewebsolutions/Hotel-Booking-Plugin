@@ -357,6 +357,9 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
     grid-column: 1 / -1;
     font-weight: 700;
     color: #005f73;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     white-space: nowrap;
 }
 

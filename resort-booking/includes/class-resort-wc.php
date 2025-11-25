@@ -68,7 +68,7 @@ return;
 	WC()->cart->empty_cart();
 	WC()->session->set( 'resort_booking_date', $date );
 	WC()->session->set( 'resort_booking_accommodation', $default_accom );
-	WC()->session->set( 'resort_booking_adults', 1 );
+	WC()->session->set( 'resort_booking_adults', 0 );
 	WC()->session->set( 'resort_booking_children', 0 );
 	WC()->session->set( 'resort_payment_option', 'full' );
 	WC()->cart->add_to_cart( $product_id );
@@ -91,7 +91,7 @@ public function render_checkout_fields( $checkout ) {
 	$default_accom = $has_forced_date && ! empty( $accom ) && isset( $accom[0]['name'] ) ? $accom[0]['name'] : '';
 	$session_accom = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
 	$selected_accom = $session_accom ? $session_accom : $default_accom;
-	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
+	$adults = absint( WC()->session->get( 'resort_booking_adults', 0 ) );
 	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
 	$payment_option = sanitize_text_field( WC()->session->get( 'resort_payment_option', 'full' ) );
 	?>
@@ -118,7 +118,7 @@ public function render_checkout_fields( $checkout ) {
 	<?php endif; ?>
 	<p class="form-row form-row-last">
 	<label for="resort_booking_adults"><?php esc_html_e( 'Adults', 'resort-booking' ); ?></label>
-	<input type="number" min="1" name="resort_booking_adults" id="resort_booking_adults" value="<?php echo esc_attr( $adults ); ?>" class="input-text" />
+	<input type="number" min="0" name="resort_booking_adults" id="resort_booking_adults" value="<?php echo esc_attr( $adults ); ?>" class="input-text" />
 	</p>
 	<p class="form-row form-row-first">
 	<label for="resort_booking_children"><?php esc_html_e( 'Children', 'resort-booking' ); ?></label>
@@ -186,9 +186,9 @@ if ( ! $has_forced_date && empty( $accom ) ) {
 wc_add_notice( esc_html__( 'Select accommodation.', 'resort-booking' ), 'error' );
 }
 
-if ( $adults < 1 ) {
-wc_add_notice( esc_html__( 'At least one adult required.', 'resort-booking' ), 'error' );
-}
+	if ( ( $adults + $children ) < 1 ) {
+	wc_add_notice( esc_html__( 'Add at least one guest.', 'resort-booking' ), 'error' );
+	}
 
 WC()->session->set( 'resort_booking_date', $date );
 WC()->session->set( 'resort_booking_accommodation', $accom );
@@ -336,7 +336,7 @@ public function display_remaining_balance( $order_id ) {
 $order     = wc_get_order( $order_id );
 $remaining = $order ? $order->get_meta( '_resort_remaining_balance' ) : 0;
 if ( $remaining > 0 ) {
-echo '<p class="resort-remaining">' . esc_html( sprintf( __( 'Remaining balance: %s', 'resort-booking' ), wc_price( $remaining ) ) ) . '</p>';
+echo '<p class="resort-remaining resort-summary"><span class="resort-summary-label">' . esc_html__( 'Remaining balance:', 'resort-booking' ) . '</span> ' . wp_kses_post( wc_price( $remaining ) ) . '</p>';
 }
 }
 
