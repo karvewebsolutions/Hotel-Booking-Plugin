@@ -262,11 +262,6 @@ $adult_rate = 0;
 	$child_rate = $meta_child;
 	}
 
-	// As a last resort use product regular price to avoid a zero-fee experience.
-	if ( 0 === $adult_rate ) {
-	$adult_rate = floatval( $product->get_regular_price() );
-	}
-
 	// If child rate is still zero, mirror adult rate so totals grow with headcount.
 	if ( 0 === $child_rate ) {
 	$child_rate = $adult_rate;
