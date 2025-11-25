@@ -1,22 +1,319 @@
-.resort-booking-form {
-border: 1px solid #ddd;
-padding: 16px;
-margin: 12px 0;
-background: #fafafa;
+/* ────── Calendar Shortcode Styling ────── */
+.resort-booking-calendar {
+    margin: 0 auto 2em;
+    text-align: center;
+    max-width: 400px;
+    overflow: visible;
 }
 
-.resort-booking-note {
-color: #555;
-font-size: 13px;
+.flatpickr-calendar {
+    display: inline-block !important;
+    position: static !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
 }
 
-.resort-booking-checkout {
-padding: 12px;
-border: 1px solid #e2e2e2;
-margin-bottom: 16px;
-background: #fff;
+.resort-booking-calendar button,
+.resort-back-button,
+#place_order {
+    margin-top: 1em;
+    padding: 0.6em 1.2em;
+    background-color: #335E42 !important;
+    color: #fff !important;
+    border: 1px solid #335E42 !important;
+    font-size: 1em;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
-.resort-summary {
-font-weight: 600;
+.resort-booking-calendar button:hover,
+.resort-back-button:hover,
+.resort-back-button:focus,
+#place_order:hover,
+#place_order:focus,
+#place_order:active {
+    background-color: #F7F8F9 !important;
+    color: #335E42 !important;
+    border-color: #335E42 !important;
+}
+
+/* ────── Checkout Booking Fields ────── */
+#resort_booking_checkout_fields {
+    margin-top: 20px;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+#resort_booking_checkout_fields h3 {
+    font-size: 1.8rem !important;
+    font-weight: 500 !important;
+    margin: -0.75em 0 0.75em 0 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+.woocommerce-checkout {
+    padding: 5% !important;
+}
+
+/* ────── Select2 Styling ────── */
+.select2-container--default {
+    width: 100% !important;
+}
+
+.select2-selection--single {
+    border: 1px solid !important;
+    border-radius: 4px !important;
+    padding: 0.75rem !important;
+    background-color: #fff !important;
+    min-height: calc(1em + 1.5rem) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.select2-selection--single:hover {
+    border-color: #4a9753 !important;
+}
+
+.select2-container--open .select2-selection--single,
+.select2-container--focus .select2-selection--single {
+    border-color: #3d7f45 !important;
+    box-shadow: 0 0 0 2px rgba(90, 171, 97, 0.3) !important;
+    outline: none !important;
+}
+
+.select2-selection__rendered {
+    line-height: 1.5 !important;
+    margin-top: 0 !important;
+}
+
+.select2-selection__clear {
+    display: none !important;
+}
+
+/* ────── Typography ────── */
+@font-face {
+    font-family: 'Prompt';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/wp-content/themes/your-child-theme/fonts/Prompt-Regular.woff2') format('woff2');
+    font-display: swap;
+}
+
+html, body, input, button, select, textarea {
+    font-family: 'Prompt', sans-serif !important;
+}
+
+/* ────── Layout and Spacing ────── */
+.woocommerce-additional-fields,
+#booking-summary-wrapper,
+.resort-payment-options {
+    margin: 2em 0;
+}
+
+#order_review_heading {
+    margin: 2em 0 1em;
+}
+
+/* ────── Footer Full Width Fix ────── */
+footer.site-footer,
+footer#colophon,
+.site-footer,
+.footer-area {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-right: calc(-50vw + 50%) !important;
+    margin-bottom: calc(-50vw + 50%) !important;
+    padding: 2rem 0;
+}
+
+footer.site-footer .container,
+footer#colophon .container,
+.site-footer .container,
+.footer-area .container {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+}
+
+/* ────── Header Tweaks on Checkout ────── */
+body.woocommerce-checkout header.site-header,
+body.woocommerce-checkout .site-header {
+    padding-bottom: 0 !important;
+}
+
+body.woocommerce-checkout .site-header .custom-logo-link img {
+    max-height: 100% !important;
+    width: auto !important;
+}
+
+body.woocommerce-checkout .site-header .main-navigation a {
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+}
+
+body.woocommerce-checkout .site-header .container {
+    max-width: 100% !important;
+    width: 90% !important;
+}
+.resort-booking-calendar input.flatpickr-inline {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+#resort-calendar-container .flatpickr-calendar {
+    display: inline-block;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 1em;
+    font-family: inherit;
+}
+
+
+
+
+
+
+
+
+
+
+
+/* === Container & Typography === */
+.woocommerce form.checkout {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    color: #001219;
+}
+
+.woocommerce h3 {
+    font-size: 28px;
+    color: #005f73;
+    border-bottom: 2px solid #94d2bd;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* === Booking Summary & Payment Box === */
+#order_review, .woocommerce-checkout-payment {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #d0d0d0;
+    margin-top: 20px;
+}
+
+/* === Inputs === */
+.woocommerce form.checkout input[type="text"],
+.woocommerce form.checkout input[type="email"],
+.woocommerce form.checkout input[type="tel"],
+.woocommerce form.checkout textarea,
+.woocommerce form.checkout select {
+    border: 1px solid #0a9396;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+}
+
+/* === Booking Fields Titles === */
+#resort_booking_section label,
+#resort_booking_section h4,
+#resort_booking_section h3 {
+    color: #005f73;
+    font-weight: 600;
+}
+
+/* === Button === */
+.woocommerce form.checkout input.button,
+.woocommerce-checkout .place-order button {
+    background-color: #005f73;
+    color: #ffffff;
+    border: none;
+    padding: 14px 24px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+.woocommerce form.checkout input.button:hover,
+.woocommerce-checkout .place-order button:hover {
+    background-color: #0a9396;
+}
+
+/* === Radio/Checkbox Styling === */
+.woocommerce-checkout input[type="checkbox"],
+.woocommerce-checkout input[type="radio"] {
+    accent-color: #0a9396;
+}
+
+/* === Summary Totals === */
+.woocommerce-checkout-review-order-table tfoot th,
+.woocommerce-checkout-review-order-table tfoot td {
+    font-size: 18px;
+    color: #001219;
+}
+
+/* === Responsive Layout Adjustments === */
+@media (min-width: 768px) {
+    .woocommerce form.checkout #customer_details {
+        display: flex;
+        gap: 30px;
+    }
+
+    .woocommerce form.checkout #customer_details .col-1,
+    .woocommerce form.checkout #customer_details .col-2 {
+        width: 50%;
+    }
+}
+
+
+
+#resort_booking_checkout_fields > h3 {
+    color: #005f73;
+    font-size: 26px;
+    font-weight: 600;
+    border-bottom: 2px solid #94d2bd;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+
+
+
+
+
+.woocommerce-billing-fields > h3,
+.woocommerce-shipping-fields > h3,
+#order_review_heading,
+.woocommerce-additional-fields > h3,
+.woocommerce-checkout-payment > h3,
+#resort_booking_checkout_fields > h3 {
+    color: #005f73;
+    font-size: 26px;
+    font-weight: 600;
+    border-bottom: 2px solid #94d2bd;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+
+
+
+
+
+body.paragliding-product-in-cart #booking-summary-wrapper {
+    display: none;
 }
