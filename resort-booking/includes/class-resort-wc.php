@@ -232,6 +232,10 @@ return;
         $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
         $meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
 
+        if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
+                return;
+        }
+
         // Booking line prices are zeroed in maybe_zero_cart_price() to avoid quantity scaling.
 	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
 	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
