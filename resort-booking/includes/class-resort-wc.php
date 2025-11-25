@@ -224,12 +224,14 @@ return;
 $forced  = get_post_meta( $product->get_id(), '_resort_forced_date', true );
 $has_forced_date = ! empty( $forced );
 $accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
-$accoms = is_array( $accoms ) ? $accoms : array();
-$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
-$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
-$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
-$default_accom = $has_forced_date && ! empty( $accoms ) && isset( $accoms[0]['name'] ) ? $accoms[0]['name'] : '';
-$selected = ( empty( $selected ) && $default_accom ) ? $default_accom : $selected;
+	$accoms = is_array( $accoms ) ? $accoms : array();
+	$meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+	$meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
+	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
+	$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
+	$default_accom = $has_forced_date && ! empty( $accoms ) && isset( $accoms[0]['name'] ) ? $accoms[0]['name'] : '';
+	$selected = ( empty( $selected ) && $default_accom ) ? $default_accom : $selected;
 $selected = sanitize_text_field( $selected );
 if ( empty( WC()->session->get( 'resort_booking_accommodation', '' ) ) && $selected ) {
 WC()->session->set( 'resort_booking_accommodation', $selected );
@@ -252,9 +254,22 @@ $adult_rate = 0;
 	$child_rate = floatval( $accoms[0]['child'] );
 	}
 
-	// As a last resort use product price to avoid a zero-fee experience.
+	// If we still have no rates, use meta overrides.
+	if ( 0 === $adult_rate && $meta_adult > 0 ) {
+	$adult_rate = $meta_adult;
+	}
+	if ( 0 === $child_rate && $meta_child > 0 ) {
+	$child_rate = $meta_child;
+	}
+
+	// As a last resort use product regular price to avoid a zero-fee experience.
 	if ( 0 === $adult_rate ) {
-	$adult_rate = floatval( $product->get_price() );
+	$adult_rate = floatval( $product->get_regular_price() );
+	}
+
+	// If child rate is still zero, mirror adult rate so totals grow with headcount.
+	if ( 0 === $child_rate ) {
+	$child_rate = $adult_rate;
 	}
 
 	$total = ( $adults * $adult_rate ) + ( $children * $child_rate );
@@ -265,6 +280,8 @@ WC()->session->set( 'resort_remaining_balance', $remaining );
 
 if ( $total > 0 ) {
 WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), $fee );
+} else {
+WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), 0 );
 }
 }
 

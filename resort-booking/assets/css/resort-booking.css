@@ -359,3 +359,10 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
     color: #005f73;
     white-space: nowrap;
 }
+
+.resort-summary-label {
+    display: inline-block;
+    min-width: 140px;
+    font-weight: 600;
+    color: #001219;
+}

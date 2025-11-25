@@ -11,6 +11,7 @@
 - Install locally by copying `resort-booking/` into a WordPress `wp-content/plugins/` directory and activating **Resort Booking**.
 - Quick syntax check: `find resort-booking -name '*.php' -print0 | xargs -0 -n1 php -l`.
 - Optional lint with WordPress standards if you have `phpcs` installed: `phpcs --standard=WordPress --ignore=vendor resort-booking`.
+- Current plugin version: 1.1.1 (update `resort-booking.php` header + `readme.txt` stable tag + changelog when bumping).
 - To test UI/flows, spin up WordPress (e.g., `wp-env start` or a local LAMP stack) with WooCommerce active, then exercise the booking shortcode and admin pages.
 
 ## Coding Style & Naming Conventions
