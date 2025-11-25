@@ -13,6 +13,11 @@ Resort Booking is a WooCommerce extension that provides date-based bookings with
 - Use **WooCommerce > Resort Booking Dates** to bulk paste CSV rows `product_id,date1,date2` for blocked dates.
 - Use **WooCommerce > Checkout Section Order** to reorder sections; drag the list and click Save.
 
+## Admin settings locations
+- **Bulk blocked dates:** In the WordPress dashboard go to **WooCommerce → Resort Booking Dates**.
+- **Checkout section order:** In the WordPress dashboard go to **WooCommerce → Checkout Section Order**.
+- **Per-product booking settings:** Edit an individual product and use the **Resort Booking Dates** metabox in the sidebar to set a forced date, disable the date picker, or add blocked dates.
+
 ## Checkout fields
 - Booking date (readonly)
 - Accommodation selector from `_resort_accommodations` meta
