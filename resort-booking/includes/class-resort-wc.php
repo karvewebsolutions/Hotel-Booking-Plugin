@@ -224,9 +224,12 @@ return;
 $forced  = get_post_meta( $product->get_id(), '_resort_forced_date', true );
 $has_forced_date = ! empty( $forced );
 $accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
-	$accoms = is_array( $accoms ) ? $accoms : array();
-	$meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
-	$meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+$accoms = is_array( $accoms ) ? $accoms : array();
+$meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+$meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+
+// Keep booking line price at zero so the booking fee is not multiplied by quantity.
+$product->set_price( 0 );
 	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
 	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
 	$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
