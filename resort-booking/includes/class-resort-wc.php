@@ -221,12 +221,22 @@ if ( ! $product ) {
 return;
 }
 
-$forced  = get_post_meta( $product->get_id(), '_resort_forced_date', true );
-$has_forced_date = ! empty( $forced );
-$accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
-	$accoms = is_array( $accoms ) ? $accoms : array();
-	$meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
-	$meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+        if ( ! $this->is_booking_product( $product ) ) {
+                return;
+        }
+
+        $forced  = get_post_meta( $product->get_id(), '_resort_forced_date', true );
+        $has_forced_date = ! empty( $forced );
+        $accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+        $accoms = is_array( $accoms ) ? $accoms : array();
+        $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+        $meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+
+        if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
+                return;
+        }
+
+        // Booking line prices are zeroed in maybe_zero_cart_price() to avoid quantity scaling.
 	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
 	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
 	$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
@@ -314,18 +324,35 @@ WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), 0 );
 				continue;
 			}
 
-			$product    = $cart_item['data'];
-			$accoms     = get_post_meta( $product->get_id(), '_resort_accommodations', true );
-			$meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
-			$meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+                        $product = $cart_item['data'];
 
-			if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
-				continue;
-			}
+                        if ( ! $this->is_booking_product( $product ) ) {
+                                continue;
+                        }
 
-			$product->set_price( 0 );
-		}
-	}
+                        $product->set_price( 0 );
+                }
+        }
+
+    /**
+     * Determine if a product uses booking pricing metadata.
+     *
+     * @param WC_Product $product Product instance.
+     *
+     * @return bool
+     */
+    private function is_booking_product( $product ) {
+        $accoms     = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+        $accoms     = is_array( $accoms ) ? $accoms : array();
+        $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+        $meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+
+        if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
+            return false;
+        }
+
+        return true;
+    }
 
 /**
  * Display remaining balance on thank you page.
@@ -402,13 +429,29 @@ die();
  *
  * @return WC_Product|null
  */
-private function get_cart_product() {
-$cart = WC()->cart;
-if ( ! $cart || empty( $cart->get_cart() ) ) {
-return null;
-}
-$items = $cart->get_cart();
-$first = reset( $items );
-return isset( $first['data'] ) ? $first['data'] : null;
-}
+    private function get_cart_product() {
+        $cart = WC()->cart;
+
+        if ( ! $cart || $cart->is_empty() ) {
+            return null;
+        }
+
+        foreach ( $cart->get_cart() as $cart_item ) {
+            if ( empty( $cart_item['data'] ) || ! $cart_item['data'] instanceof WC_Product ) {
+                continue;
+            }
+
+            $product    = $cart_item['data'];
+            $accoms     = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+            $accoms     = is_array( $accoms ) ? $accoms : array();
+            $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+            $meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+
+            if ( ! empty( $accoms ) || $meta_adult > 0 || $meta_child > 0 ) {
+                return $product;
+            }
+        }
+
+        return null;
+    }
 }
