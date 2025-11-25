@@ -17,18 +17,24 @@ disable: blocked,
 }
 
 function syncToSession() {
+var $childrenField = $( '#resort_booking_children' );
+var childrenValue = $childrenField.length ? $childrenField.val() : 0;
+
+var adultsValue = $( '#resort_booking_adults' ).val() || 0;
+
 var payload = {
 action: 'resort_save_booking_session',
 nonce: resortBooking.nonce,
 date: $( 'input[name="resort_booking_date"]' ).val(),
 accommodation: $( '#resort_booking_accommodation' ).val(),
-adults: $( '#resort_booking_adults' ).val(),
-children: $( '#resort_booking_children' ).val(),
+adults: adultsValue,
+children: childrenValue,
 payment: $( 'input[name="resort_payment_option"]:checked' ).val(),
 };
 
 $.post( config.ajaxUrl, payload, function() {
 $( document.body ).trigger( 'update_checkout' );
+reloadSummary();
 } );
 }
 
