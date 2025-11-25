@@ -232,8 +232,7 @@ $has_forced_date = ! empty( $forced );
                 return;
         }
 
-        // Keep booking line price at zero so the booking fee is not multiplied by quantity.
-        $product->set_price( 0 );
+        // Booking line prices are zeroed in maybe_zero_cart_price() to avoid quantity scaling.
 	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
 	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
 	$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
