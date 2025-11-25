@@ -371,14 +371,30 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
 
 .resort-payment-options {
     align-self: flex-start;
-    gap: 4px;
-}
-
-.resort-payment-options label {
-    font-weight: 500;
     display: flex;
     align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.resort-payment-label {
+    font-weight: 600;
+    color: #001219;
+}
+
+.resort-payment-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.resort-payment-choice {
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
+    margin: 0;
 }
 
 .resort-payment-options input[type="radio"] {

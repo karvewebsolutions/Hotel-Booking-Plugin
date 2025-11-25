@@ -141,9 +141,11 @@ public function render_checkout_fields( $checkout ) {
                 </p>
         <?php endif; ?>
         <p class="form-row form-row-last resort-payment-options">
-        <label><?php esc_html_e( 'Payment option', 'resort-booking' ); ?></label><br />
-        <label><input type="radio" name="resort_payment_option" value="full" <?php checked( $payment_option, 'full' ); ?> /> <?php esc_html_e( 'Pay Full Amount', 'resort-booking' ); ?></label><br />
-        <label><input type="radio" name="resort_payment_option" value="deposit" <?php checked( $payment_option, 'deposit' ); ?> /> <?php esc_html_e( 'Pay 50% Deposit', 'resort-booking' ); ?></label>
+        <span class="resort-payment-label"><?php esc_html_e( 'Payment option', 'resort-booking' ); ?></span>
+        <span class="resort-payment-group">
+                <label class="resort-payment-choice"><input type="radio" name="resort_payment_option" value="full" <?php checked( $payment_option, 'full' ); ?> /> <?php esc_html_e( 'Pay Full Amount', 'resort-booking' ); ?></label>
+                <label class="resort-payment-choice"><input type="radio" name="resort_payment_option" value="deposit" <?php checked( $payment_option, 'deposit' ); ?> /> <?php esc_html_e( 'Pay 50% Deposit', 'resort-booking' ); ?></label>
+        </span>
         </p>
         </div>
 <?php
