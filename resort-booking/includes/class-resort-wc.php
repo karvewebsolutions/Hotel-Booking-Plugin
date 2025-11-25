@@ -187,36 +187,7 @@ $order->update_meta_data( '_resort_remaining_balance', WC()->session->get( 'reso
  * Calculate booking fee based on accommodations.
  */
 public function calculate_booking_fee() {
-$product = $this->get_cart_product();
-if ( ! $product ) {
-return;
-}
-
-$accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
-$accoms = is_array( $accoms ) ? $accoms : array();
-$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
-$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
-$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
-$payment  = sanitize_text_field( WC()->session->get( 'resort_payment_option', 'full' ) );
-
-$adult_rate = 0;
-$child_rate = 0;
-foreach ( $accoms as $row ) {
-if ( isset( $row['name'] ) && $selected === $row['name'] ) {
-$adult_rate = floatval( $row['adult'] );
-$child_rate = floatval( $row['child'] );
-}
-}
-
-$total = ( $adults * $adult_rate ) + ( $children * $child_rate );
-$fee   = ( 'deposit' === $payment ) ? $total * 0.5 : $total;
-$remaining = ( 'deposit' === $payment ) ? $total - $fee : 0;
-
-WC()->session->set( 'resort_remaining_balance', $remaining );
-
-if ( $total > 0 ) {
-WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), $fee );
-}
+    $amounts = $this->get_booking_amounts();
 }
 
 /**
@@ -248,21 +219,72 @@ WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), $fee );
             return;
         }
 
-        foreach ( $cart->get_cart() as $cart_item ) {
-            if ( empty( $cart_item['data'] ) || ! $cart_item['data'] instanceof WC_Product ) {
-                continue;
-            }
+foreach ( $cart->get_cart() as $cart_item ) {
+if ( empty( $cart_item['data'] ) || ! $cart_item['data'] instanceof WC_Product ) {
+continue;
+}
 
-            $product = $cart_item['data'];
-            $accoms  = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+$product = $cart_item['data'];
+$accoms  = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+$amounts = $this->get_booking_amounts();
 
-            if ( empty( $accoms ) ) {
-                continue;
-            }
+if ( empty( $accoms ) ) {
+continue;
+}
 
-            $product->set_price( 0 );
-        }
-    }
+$product->set_price( floatval( $amounts['charge'] ) );
+}
+}
+
+/**
+ * Calculate booking charge, total, and remaining balance.
+ *
+ * @return array
+ */
+private function get_booking_amounts() {
+$product = $this->get_cart_product();
+
+if ( ! $product ) {
+WC()->session->set( 'resort_remaining_balance', 0 );
+WC()->session->set( 'resort_booking_charge', 0 );
+
+return array(
+'total'     => 0,
+'charge'    => 0,
+'remaining' => 0,
+);
+}
+
+$accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+$accoms = is_array( $accoms ) ? $accoms : array();
+$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
+$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
+$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
+$payment  = sanitize_text_field( WC()->session->get( 'resort_payment_option', 'full' ) );
+
+$adult_rate = 0;
+$child_rate = 0;
+foreach ( $accoms as $row ) {
+if ( isset( $row['name'] ) && $selected === $row['name'] ) {
+$adult_rate = floatval( $row['adult'] );
+$child_rate = floatval( $row['child'] );
+}
+}
+
+$total     = ( $adults * $adult_rate ) + ( $children * $child_rate );
+$charge    = ( 'deposit' === $payment ) ? $total * 0.5 : $total;
+$remaining = ( 'deposit' === $payment ) ? $total - $charge : 0;
+
+
+WC()->session->set( 'resort_remaining_balance', $remaining );
+WC()->session->set( 'resort_booking_charge', $charge );
+
+return array(
+'total'     => $total,
+'charge'    => $charge,
+'remaining' => $remaining,
+);
+}
 
 /**
  * Display remaining balance on thank you page.
