@@ -221,8 +221,12 @@ if ( ! $product ) {
 return;
 }
 
-$forced  = get_post_meta( $product->get_id(), '_resort_forced_date', true );
-$has_forced_date = ! empty( $forced );
+        if ( ! $this->is_booking_product( $product ) ) {
+                return;
+        }
+
+        $forced  = get_post_meta( $product->get_id(), '_resort_forced_date', true );
+        $has_forced_date = ! empty( $forced );
         $accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
         $accoms = is_array( $accoms ) ? $accoms : array();
         $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
@@ -320,18 +324,35 @@ WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), 0 );
 				continue;
 			}
 
-			$product    = $cart_item['data'];
-			$accoms     = get_post_meta( $product->get_id(), '_resort_accommodations', true );
-			$meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
-			$meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+                        $product = $cart_item['data'];
 
-			if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
-				continue;
-			}
+                        if ( ! $this->is_booking_product( $product ) ) {
+                                continue;
+                        }
 
-			$product->set_price( 0 );
-		}
-	}
+                        $product->set_price( 0 );
+                }
+        }
+
+    /**
+     * Determine if a product uses booking pricing metadata.
+     *
+     * @param WC_Product $product Product instance.
+     *
+     * @return bool
+     */
+    private function is_booking_product( $product ) {
+        $accoms     = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+        $accoms     = is_array( $accoms ) ? $accoms : array();
+        $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+        $meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+
+        if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
+            return false;
+        }
+
+        return true;
+    }
 
 /**
  * Display remaining balance on thank you page.
