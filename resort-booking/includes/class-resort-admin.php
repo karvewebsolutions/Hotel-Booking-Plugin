@@ -200,17 +200,24 @@ if ( ! $product_id || 'product' !== get_post_type( $product_id ) ) {
 continue;
 }
 
-$dates = array();
+$existing_dates = get_post_meta( $product_id, '_resort_blocked_dates', true );
+if ( ! is_array( $existing_dates ) ) {
+	$existing_dates = array();
+}
+
+$new_dates = array();
 foreach ( $parts as $index => $value ) {
-if ( 0 === $index ) {
-continue;
+	if ( 0 === $index ) {
+		continue;
+	}
+	$clean = $this->sanitize_date( $value );
+	if ( $clean ) {
+		$new_dates[] = $clean;
+	}
 }
-$clean = $this->sanitize_date( $value );
-if ( $clean ) {
-$dates[] = $clean;
-}
-}
-update_post_meta( $product_id, '_resort_blocked_dates', $dates );
+
+$all_dates = array_values( array_unique( array_merge( $existing_dates, $new_dates ) ) );
+update_post_meta( $product_id, '_resort_blocked_dates', $all_dates );
 }
 }
 
