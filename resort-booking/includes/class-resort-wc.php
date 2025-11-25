@@ -314,21 +314,23 @@ WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), 0 );
             return;
         }
 
-        foreach ( $cart->get_cart() as $cart_item ) {
-            if ( empty( $cart_item['data'] ) || ! $cart_item['data'] instanceof WC_Product ) {
-                continue;
-            }
+		foreach ( $cart->get_cart() as $cart_item ) {
+			if ( empty( $cart_item['data'] ) || ! $cart_item['data'] instanceof WC_Product ) {
+				continue;
+			}
 
-            $product = $cart_item['data'];
-            $accoms  = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+			$product    = $cart_item['data'];
+			$accoms     = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+			$meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+			$meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
 
-            if ( empty( $accoms ) ) {
-                continue;
-            }
+			if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
+				continue;
+			}
 
-            $product->set_price( 0 );
-        }
-    }
+			$product->set_price( 0 );
+		}
+	}
 
 /**
  * Display remaining balance on thank you page.
