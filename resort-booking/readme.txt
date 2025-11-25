@@ -4,7 +4,7 @@ Tags: woocommerce, booking, deposit
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,6 +31,11 @@ Use custom meta `_resort_accommodations` containing arrays with `name`, `adult`,
 Yes, COD is removed from available gateways when deposit is selected.
 
 == Changelog ==
+= 1.1.2 =
+* Align checkout payment label with full and deposit radio choices on a single row.
+* Refresh checkout totals when payment selection changes so amounts stay in sync.
+* Hide the children field when no child pricing is configured to avoid empty inputs.
+
 = 1.1.1 =
 * Add default adult/child pricing fields on products and use them in fee calculation.
 * Sync checkout session on load so booking charge appears immediately.
