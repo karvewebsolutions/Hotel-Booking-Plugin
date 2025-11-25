@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: Resort Booking
- * Plugin URI: https://example.com/resort-booking
+ * Plugin URI: https://karveweb.solutions/resort-booking
  * Description: Resort Booking integrates WooCommerce with date-based booking, deposits, and checkout customization.
- * Version: 1.0.0
- * Author: OpenAI
+ * Version: 1.1.1
+ * Author: Karveweb.solutions
  * Text Domain: resort-booking
  * License: GPL2+
  */

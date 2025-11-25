@@ -67,15 +67,17 @@ array( $this, 'render_product_metabox' ),
  * @param WP_Post $post Post object.
  */
 public function render_product_metabox( $post ) {
-$forced_date = get_post_meta( $post->ID, '_resort_forced_date', true );
-$disable     = get_post_meta( $post->ID, '_resort_disable_date_selection', true );
-$blocked     = get_post_meta( $post->ID, '_resort_blocked_dates', true );
-$blocked     = is_array( $blocked ) ? $blocked : array();
+	$forced_date = get_post_meta( $post->ID, '_resort_forced_date', true );
+	$disable     = get_post_meta( $post->ID, '_resort_disable_date_selection', true );
+	$blocked     = get_post_meta( $post->ID, '_resort_blocked_dates', true );
+	$blocked     = is_array( $blocked ) ? $blocked : array();
+	$adult_price = get_post_meta( $post->ID, '_resort_adult_price', true );
+	$child_price = get_post_meta( $post->ID, '_resort_child_price', true );
 
-wp_nonce_field( 'resort_booking_meta', 'resort_booking_meta_nonce' );
-?>
-<p>
-<label for="resort_forced_date"><strong><?php esc_html_e( 'Desired booking date', 'resort-booking' ); ?></strong></label><br />
+	wp_nonce_field( 'resort_booking_meta', 'resort_booking_meta_nonce' );
+	?>
+	<p>
+	<label for="resort_forced_date"><strong><?php esc_html_e( 'Desired booking date', 'resort-booking' ); ?></strong></label><br />
 <input type="date" name="resort_forced_date" id="resort_forced_date" value="<?php echo esc_attr( $forced_date ); ?>" />
 </p>
 <p>
@@ -94,10 +96,18 @@ wp_nonce_field( 'resort_booking_meta', 'resort_booking_meta_nonce' );
 </div>
 <?php endforeach; ?>
 </div>
-<button type="button" class="button resort-add-blocked"><?php esc_html_e( 'Add blocked date', 'resort-booking' ); ?></button>
-</div>
-<?php
-}
+	<button type="button" class="button resort-add-blocked"><?php esc_html_e( 'Add blocked date', 'resort-booking' ); ?></button>
+	</div>
+	<p>
+		<label for="resort_adult_price"><strong><?php esc_html_e( 'Default adult price', 'resort-booking' ); ?></strong></label><br />
+		<input type="number" step="0.01" min="0" name="resort_adult_price" id="resort_adult_price" value="<?php echo esc_attr( $adult_price ); ?>" />
+	</p>
+	<p>
+		<label for="resort_child_price"><strong><?php esc_html_e( 'Default child price', 'resort-booking' ); ?></strong></label><br />
+		<input type="number" step="0.01" min="0" name="resort_child_price" id="resort_child_price" value="<?php echo esc_attr( $child_price ); ?>" />
+	</p>
+	<?php
+	}
 
 /**
  * Save product meta.
@@ -118,14 +128,16 @@ if ( 'product' !== $post->post_type || ! current_user_can( 'edit_product', $post
 return;
 }
 
-$forced_date = isset( $_POST['resort_forced_date'] ) ? sanitize_text_field( wp_unslash( $_POST['resort_forced_date'] ) ) : '';
-$disable     = isset( $_POST['resort_disable_date_selection'] ) ? '1' : '';
-$blocked     = isset( $_POST['resort_blocked_dates'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['resort_blocked_dates'] ) ) : array();
+	$forced_date = isset( $_POST['resort_forced_date'] ) ? sanitize_text_field( wp_unslash( $_POST['resort_forced_date'] ) ) : '';
+	$disable     = isset( $_POST['resort_disable_date_selection'] ) ? '1' : '';
+	$blocked     = isset( $_POST['resort_blocked_dates'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['resort_blocked_dates'] ) ) : array();
+	$adult_price = isset( $_POST['resort_adult_price'] ) ? floatval( wp_unslash( $_POST['resort_adult_price'] ) ) : '';
+	$child_price = isset( $_POST['resort_child_price'] ) ? floatval( wp_unslash( $_POST['resort_child_price'] ) ) : '';
 
-if ( $forced_date ) {
-update_post_meta( $post_id, '_resort_forced_date', $forced_date );
-} else {
-delete_post_meta( $post_id, '_resort_forced_date' );
+	if ( $forced_date ) {
+	update_post_meta( $post_id, '_resort_forced_date', $forced_date );
+	} else {
+	delete_post_meta( $post_id, '_resort_forced_date' );
 }
 
 if ( $disable ) {
@@ -134,9 +146,21 @@ update_post_meta( $post_id, '_resort_disable_date_selection', '1' );
 delete_post_meta( $post_id, '_resort_disable_date_selection' );
 }
 
-$blocked = array_filter( array_map( array( $this, 'sanitize_date' ), $blocked ) );
-update_post_meta( $post_id, '_resort_blocked_dates', $blocked );
-}
+	$blocked = array_filter( array_map( array( $this, 'sanitize_date' ), $blocked ) );
+	update_post_meta( $post_id, '_resort_blocked_dates', $blocked );
+
+	if ( '' !== $adult_price ) {
+	update_post_meta( $post_id, '_resort_adult_price', $adult_price );
+	} else {
+	delete_post_meta( $post_id, '_resort_adult_price' );
+	}
+
+	if ( '' !== $child_price ) {
+	update_post_meta( $post_id, '_resort_child_price', $child_price );
+	} else {
+	delete_post_meta( $post_id, '_resort_child_price' );
+	}
+	}
 
 /**
  * Render bulk date assignment page.

@@ -32,6 +32,11 @@ $( document.body ).trigger( 'update_checkout' );
 } );
 }
 
+function triggerOnLoad() {
+// Trigger one sync on first paint to ensure fees appear even before user edits fields.
+syncToSession();
+}
+
 function reloadSummary() {
 $.post( config.ajaxUrl, { action: 'reload_booking_summary' }, function( html ) {
 $( '.resort-booking-checkout' ).find( '.resort-summary' ).remove();
@@ -53,6 +58,9 @@ $( function() {
 initDatepicker();
 $( document.body ).on( 'change', '#resort_booking_accommodation, #resort_booking_adults, #resort_booking_children, input[name="resort_payment_option"]', syncToSession );
 $( document.body ).on( 'updated_checkout', reloadSummary );
+if ( $( '.resort-booking-checkout' ).length ) {
+triggerOnLoad();
+}
 adminBlockedDates();
 } );
 })( jQuery );
