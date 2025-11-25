@@ -19,15 +19,16 @@ class Resort_Booking_WC {
 public function __construct() {
 add_action( 'init', array( $this, 'maybe_handle_booking_form' ) );
 add_action( 'woocommerce_after_order_notes', array( $this, 'render_checkout_fields' ) );
-add_action( 'woocommerce_checkout_before_customer_details', array( $this, 'render_checkout_sections' ), 5 );
-add_action( 'woocommerce_checkout_process', array( $this, 'validate_checkout_fields' ) );
-add_action( 'woocommerce_checkout_create_order', array( $this, 'save_order_meta' ), 10, 2 );
-add_action( 'woocommerce_cart_calculate_fees', array( $this, 'calculate_booking_fee' ) );
-add_filter( 'woocommerce_get_price_html', array( $this, 'maybe_zero_price' ), 10, 2 );
-add_action( 'woocommerce_thankyou', array( $this, 'display_remaining_balance' ) );
-add_filter( 'woocommerce_email_order_meta_fields', array( $this, 'email_meta_fields' ), 10, 3 );
-add_filter( 'woocommerce_available_payment_gateways', array( $this, 'filter_gateways_for_deposit' ) );
-add_action( 'woocommerce_checkout_order_processed', array( $this, 'adjust_order_status' ), 10, 3 );
+        add_action( 'woocommerce_checkout_before_customer_details', array( $this, 'render_checkout_sections' ), 5 );
+        add_action( 'woocommerce_checkout_process', array( $this, 'validate_checkout_fields' ) );
+        add_action( 'woocommerce_checkout_create_order', array( $this, 'save_order_meta' ), 10, 2 );
+        add_action( 'woocommerce_cart_calculate_fees', array( $this, 'calculate_booking_fee' ) );
+        add_action( 'woocommerce_before_calculate_totals', array( $this, 'maybe_zero_cart_price' ) );
+        add_filter( 'woocommerce_get_price_html', array( $this, 'maybe_zero_price' ), 10, 2 );
+        add_action( 'woocommerce_thankyou', array( $this, 'display_remaining_balance' ) );
+        add_filter( 'woocommerce_email_order_meta_fields', array( $this, 'email_meta_fields' ), 10, 3 );
+        add_filter( 'woocommerce_available_payment_gateways', array( $this, 'filter_gateways_for_deposit' ) );
+        add_action( 'woocommerce_checkout_order_processed', array( $this, 'adjust_order_status' ), 10, 3 );
 add_action( 'wp_ajax_resort_save_booking_session', array( $this, 'ajax_save_booking_session' ) );
 add_action( 'wp_ajax_nopriv_resort_save_booking_session', array( $this, 'ajax_save_booking_session' ) );
 add_action( 'wp_ajax_reload_booking_summary', array( $this, 'ajax_reload_booking_summary' ) );
@@ -225,13 +226,43 @@ WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), $fee );
  * @param WC_Product $product Product.
  * @return string
  */
-public function maybe_zero_price( $price, $product ) {
-$cart_product = $this->get_cart_product();
-if ( $cart_product && $cart_product->get_id() === $product->get_id() ) {
-return wc_price( 0 );
-}
-return $price;
-}
+    public function maybe_zero_price( $price, $product ) {
+        $cart_product = $this->get_cart_product();
+        if ( $cart_product && $cart_product->get_id() === $product->get_id() ) {
+            return wc_price( 0 );
+        }
+        return $price;
+    }
+
+    /**
+     * Set cart item price to zero for booking products so totals rely on booking fee.
+     *
+     * @param WC_Cart $cart Cart object.
+     */
+    public function maybe_zero_cart_price( $cart ) {
+        if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
+            return;
+        }
+
+        if ( ! $cart || $cart->is_empty() ) {
+            return;
+        }
+
+        foreach ( $cart->get_cart() as $cart_item ) {
+            if ( empty( $cart_item['data'] ) || ! $cart_item['data'] instanceof WC_Product ) {
+                continue;
+            }
+
+            $product = $cart_item['data'];
+            $accoms  = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+
+            if ( empty( $accoms ) ) {
+                continue;
+            }
+
+            $product->set_price( 0 );
+        }
+    }
 
 /**
  * Display remaining balance on thank you page.
