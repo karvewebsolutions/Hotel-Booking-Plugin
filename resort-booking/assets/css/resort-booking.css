@@ -6,6 +6,21 @@
     overflow: visible;
 }
 
+.resort-elementor-widget {
+    width: 100%;
+    display: block;
+}
+
+.resort-booking-calendar-wrapper {
+    display: inline-block;
+    width: 100%;
+    max-width: 420px;
+}
+
+.resort-booking-button-wrapper {
+    margin-top: 1em;
+}
+
 .flatpickr-calendar {
     display: inline-block !important;
     position: static !important;
@@ -167,7 +182,7 @@ body.woocommerce-checkout .site-header .container {
     max-width: 400px;
     margin: 0 auto;
 }
-#resort-calendar-container .flatpickr-calendar {
+.resort-inline-calendar .flatpickr-calendar {
     display: inline-block;
     width: 100%;
     max-width: 400px;

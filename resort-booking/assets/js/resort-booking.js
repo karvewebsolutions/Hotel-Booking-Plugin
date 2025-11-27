@@ -1,20 +1,40 @@
 (function( $ ) {
-'use strict';
+  'use strict';
 
-var config = window.resortBooking || { ajaxUrl: ( window.ajaxurl || '' ), nonce: '' };
+  var config = window.resortBooking || { ajaxUrl: ( window.ajaxurl || '' ), nonce: '' };
 
-function initDatepicker() {
-var $field = $( '#resort-booking-date' );
-if ( ! $field.length || 'function' !== typeof flatpickr ) {
-return;
-}
-var blocked = $field.data( 'blocked' ) ? $field.data( 'blocked' ).toString().split( ',' ) : [];
-flatpickr( $field[0], {
-altInput: true,
-dateFormat: 'Y-m-d',
-disable: blocked,
-} );
-}
+  function initDatepicker() {
+    var $fields = $( '.resort-booking-date' );
+    if ( ! $fields.length || 'function' !== typeof flatpickr ) {
+      return;
+    }
+
+    $fields.each( function() {
+      var $field = $( this );
+      var blocked = $field.data( 'blocked' ) ? $field.data( 'blocked' ).toString().split( ',' ) : [];
+      var targetId = $field.data( 'calendar-target' );
+      flatpickr( $field[0], {
+        altInput: true,
+        dateFormat: 'Y-m-d',
+        inline: true,
+        disable: blocked,
+        static: true,
+        appendTo: targetId ? document.getElementById( targetId ) : undefined,
+        onReady: function( selectedDates, dateStr, instance ) {
+          // Ensure the calendar is visible on load for inline displays.
+          instance.open();
+        },
+        onChange: function( selectedDates ) {
+          if ( selectedDates && selectedDates.length ) {
+            var $form = $field.closest( 'form' );
+            if ( $form.length && $form.data( 'auto-submit' ) ) {
+              $form.trigger( 'submit' );
+            }
+          }
+        }
+      } );
+    } );
+  }
 
 function syncToSession() {
 var $childrenField = $( '#resort_booking_children' );
