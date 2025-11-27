@@ -23,6 +23,14 @@
         onReady: function( selectedDates, dateStr, instance ) {
           // Ensure the calendar is visible on load for inline displays.
           instance.open();
+        },
+        onChange: function( selectedDates ) {
+          if ( selectedDates && selectedDates.length ) {
+            var $form = $field.closest( 'form' );
+            if ( $form.length && $form.data( 'auto-submit' ) ) {
+              $form.trigger( 'submit' );
+            }
+          }
         }
       } );
     } );

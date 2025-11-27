@@ -186,6 +186,20 @@ class Resort_Booking_Elementor_Button_Widget extends Resort_Booking_Elementor_Ba
             )
         );
 
+        $this->add_control(
+            'forced_date',
+            array(
+                'label'   => __( 'Booking Date', 'resort-booking' ),
+                'type'    => Controls_Manager::DATE_TIME,
+                'default' => '',
+                'description' => __( 'Optional date to preselect for the booking; falls back to the product date if set there.', 'resort-booking' ),
+                'picker_options' => array(
+                    'enableTime' => false,
+                    'dateFormat' => 'Y-m-d',
+                ),
+            )
+        );
+
         $this->end_controls_section();
 
         $this->start_controls_section(
@@ -214,8 +228,12 @@ class Resort_Booking_Elementor_Button_Widget extends Resort_Booking_Elementor_Ba
             return;
         }
 
-        $button_label = ! empty( $settings['button_text'] ) ? sanitize_text_field( $settings['button_text'] ) : __( 'Book Now', 'resort-booking' );
-        $shortcode    = sprintf( '[resort_booking product_id="%d" show_calendar="no" show_button="yes" button_label="%s"]', $product_id, esc_attr( $button_label ) );
+        $button_label    = ! empty( $settings['button_text'] ) ? sanitize_text_field( $settings['button_text'] ) : __( 'Book Now', 'resort-booking' );
+        $forced_setting  = ! empty( $settings['forced_date'] ) ? $settings['forced_date'] : '';
+        $forced_timestamp = $forced_setting ? strtotime( $forced_setting ) : false;
+        $forced_date     = false !== $forced_timestamp ? gmdate( 'Y-m-d', $forced_timestamp ) : '';
+        $forced_attr     = $forced_date ? sprintf( ' forced_date="%s"', esc_attr( $forced_date ) ) : '';
+        $shortcode       = sprintf( '[resort_booking product_id="%d" show_calendar="no" show_button="yes" button_label="%s"%s]', $product_id, esc_attr( $button_label ), $forced_attr );
 
         echo '<div class="resort-elementor-widget resort-elementor-button-only">' . do_shortcode( $shortcode ) . '</div>';
     }
@@ -301,7 +319,7 @@ class Resort_Booking_Elementor_Calendar_Widget extends Resort_Booking_Elementor_
             return;
         }
 
-        $shortcode = sprintf( '[resort_booking product_id="%d" show_calendar="yes" show_button="no"]', $product_id );
+        $shortcode = sprintf( '[resort_booking product_id="%d" show_calendar="yes" show_button="no" auto_submit="yes"]', $product_id );
 
         echo '<div class="resort-elementor-widget resort-elementor-calendar-only">' . do_shortcode( $shortcode ) . '</div>';
     }

@@ -52,6 +52,8 @@ class Resort_Booking_Frontend {
                 'show_calendar' => 'yes',
                 'show_button'   => 'yes',
                 'button_label'  => __( 'Book Now', 'resort-booking' ),
+                'forced_date'   => '',
+                'auto_submit'   => 'no',
             ),
             $atts,
             'resort_booking'
@@ -61,18 +63,27 @@ class Resort_Booking_Frontend {
         $show_calendar     = 'no' !== strtolower( $atts['show_calendar'] );
         $show_button       = 'no' !== strtolower( $atts['show_button'] );
         $button_label      = sanitize_text_field( $atts['button_label'] );
+        $auto_submit       = 'yes' === strtolower( $atts['auto_submit'] );
         $calendar_required = false;
         $calendar_id       = 'resort-calendar-container-' . absint( $product_id );
         $date_field_id     = 'resort-booking-date-' . absint( $product_id );
+
+        $forced_date_attr = sanitize_text_field( $atts['forced_date'] );
+        $forced_timestamp = $forced_date_attr ? strtotime( $forced_date_attr ) : false;
+        $forced_date_attr = false !== $forced_timestamp ? gmdate( 'Y-m-d', $forced_timestamp ) : '';
 
         if ( ! $product_id ) {
             return '';
         }
 
-        $forced_date = get_post_meta( $product_id, '_resort_forced_date', true );
+        $forced_date = $forced_date_attr ? $forced_date_attr : get_post_meta( $product_id, '_resort_forced_date', true );
         $disable     = get_post_meta( $product_id, '_resort_disable_date_selection', true );
         $blocked     = get_post_meta( $product_id, '_resort_blocked_dates', true );
         $blocked     = is_array( $blocked ) ? $blocked : array();
+
+        if ( $forced_date_attr ) {
+            $disable = true;
+        }
 
         if ( ! $show_calendar && ! $forced_date ) {
             $calendar_required = true;
@@ -81,7 +92,7 @@ class Resort_Booking_Frontend {
 
         ob_start();
         ?>
-        <form class="resort-booking-form" method="post">
+        <form class="resort-booking-form" method="post" <?php echo $auto_submit ? 'data-auto-submit="1"' : ''; ?>>
         <?php wp_nonce_field( 'resort_booking_form', 'resort_booking_nonce' ); ?>
         <input type="hidden" name="resort_booking_product_id" value="<?php echo esc_attr( $product_id ); ?>" />
 
