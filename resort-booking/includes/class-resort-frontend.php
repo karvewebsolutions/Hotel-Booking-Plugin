@@ -67,11 +67,23 @@ ob_start();
 <p class="resort-booking-note"><?php echo esc_html( sprintf( __( 'Booking date fixed to %s', 'resort-booking' ), $forced_date ) ); ?></p>
 <input type="hidden" name="resort_booking_date" value="<?php echo esc_attr( $forced_date ); ?>" />
 <?php else : ?>
-<label for="resort-booking-date"><strong><?php esc_html_e( 'Select booking date', 'resort-booking' ); ?></strong></label>
-<input type="text" id="resort-booking-date" name="resort_booking_date" data-blocked="<?php echo esc_attr( implode( ',', $blocked ) ); ?>" />
-<?php if ( ! empty( $blocked ) ) : ?>
-<p class="resort-booking-note"><?php esc_html_e( 'Some dates are blocked for this product.', 'resort-booking' ); ?></p>
-<?php endif; ?>
+            <?php
+            $calendar_id   = 'resort-calendar-container-' . absint( $product_id );
+            $date_field_id = 'resort-booking-date-' . absint( $product_id );
+            ?>
+            <label for="<?php echo esc_attr( $date_field_id ); ?>"><strong><?php esc_html_e( 'Select booking date', 'resort-booking' ); ?></strong></label>
+            <input
+                    type="text"
+                    id="<?php echo esc_attr( $date_field_id ); ?>"
+                    class="resort-booking-date"
+                    name="resort_booking_date"
+                    data-blocked="<?php echo esc_attr( implode( ',', $blocked ) ); ?>"
+                    data-calendar-target="<?php echo esc_attr( $calendar_id ); ?>"
+            />
+            <div id="<?php echo esc_attr( $calendar_id ); ?>" class="resort-inline-calendar"></div>
+            <?php if ( ! empty( $blocked ) ) : ?>
+            <p class="resort-booking-note"><?php esc_html_e( 'Some dates are blocked for this product.', 'resort-booking' ); ?></p>
+            <?php endif; ?>
 <?php endif; ?>
 
 <button type="submit" class="button resort-booking-submit"><?php esc_html_e( 'Book Now', 'resort-booking' ); ?></button>
