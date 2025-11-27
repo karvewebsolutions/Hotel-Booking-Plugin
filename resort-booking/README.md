@@ -3,8 +3,8 @@
 Resort Booking is a WooCommerce extension that provides date-based bookings with deposit handling, forced dates, and checkout customization.
 
 ## Version
-- Current release: **1.1.3**
-- Highlights: inline booking calendars always visible per shortcode instance and a new Elementor calendar widget with a configurable product ID.
+- Current release: **1.1.4**
+- Highlights: three Elementor widgets (button, calendar, or both) with alignment/typography controls plus shortcode options to hide/show the calendar and customize the button label.
 
 ## Installation
 1. Copy the `resort-booking` folder into `wp-content/plugins/`.

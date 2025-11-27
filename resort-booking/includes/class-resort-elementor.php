@@ -30,7 +30,10 @@ class Resort_Booking_Elementor {
 			return;
 		}
 
-		require_once RESORT_BOOKING_PATH . 'includes/class-resort-elementor-widget.php';
-		$widgets_manager->register( new Resort_Booking_Elementor_Widget() );
-	}
+                require_once RESORT_BOOKING_PATH . 'includes/class-resort-elementor-widget.php';
+
+                $widgets_manager->register( new Resort_Booking_Elementor_Button_Widget() );
+                $widgets_manager->register( new Resort_Booking_Elementor_Calendar_Widget() );
+                $widgets_manager->register( new Resort_Booking_Elementor_Calendar_Button_Widget() );
+        }
 }
