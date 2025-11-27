@@ -3,7 +3,7 @@
  * Plugin Name: Resort Booking
  * Plugin URI: https://karveweb.solutions/resort-booking
  * Description: Resort Booking integrates WooCommerce with date-based booking, deposits, and checkout customization.
- * Version: 1.1.2
+ * Version: 1.1.4
  * Author: Karveweb.solutions
  * Text Domain: resort-booking
  * License: GPL2+
