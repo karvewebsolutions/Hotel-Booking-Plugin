@@ -65,6 +65,7 @@ private function includes() {
 require_once RESORT_BOOKING_PATH . 'includes/class-resort-admin.php';
 require_once RESORT_BOOKING_PATH . 'includes/class-resort-frontend.php';
 require_once RESORT_BOOKING_PATH . 'includes/class-resort-wc.php';
+require_once RESORT_BOOKING_PATH . 'includes/class-resort-elementor.php';
 }
 
 /**
@@ -74,5 +75,6 @@ private function init_hooks() {
 new Resort_Booking_Admin();
 new Resort_Booking_Frontend();
 new Resort_Booking_WC();
+new Resort_Booking_Elementor();
 }
 }
