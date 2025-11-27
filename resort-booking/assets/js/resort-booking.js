@@ -12,6 +12,7 @@ var blocked = $field.data( 'blocked' ) ? $field.data( 'blocked' ).toString().spl
 flatpickr( $field[0], {
 altInput: true,
 dateFormat: 'Y-m-d',
+inline: true,
 disable: blocked,
 } );
 }
