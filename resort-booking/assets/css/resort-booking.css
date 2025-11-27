@@ -167,7 +167,7 @@ body.woocommerce-checkout .site-header .container {
     max-width: 400px;
     margin: 0 auto;
 }
-#resort-calendar-container .flatpickr-calendar {
+.resort-inline-calendar .flatpickr-calendar {
     display: inline-block;
     width: 100%;
     max-width: 400px;
