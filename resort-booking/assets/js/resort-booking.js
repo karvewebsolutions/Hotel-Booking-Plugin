@@ -65,8 +65,14 @@ syncToSession();
 
 function reloadSummary() {
 $.post( config.ajaxUrl, { action: 'reload_booking_summary' }, function( html ) {
-$( '.resort-booking-checkout' ).find( '.resort-summary' ).remove();
-$( '.resort-booking-checkout' ).append( html );
+var $target = $( '.resort-summary-target' );
+
+if ( ! $target.length ) {
+  $target = $( '.resort-booking-checkout' );
+}
+
+$target.find( '.resort-summary' ).remove();
+$target.append( html );
 } );
 }
 
