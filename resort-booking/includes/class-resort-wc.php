@@ -148,6 +148,7 @@ public function render_checkout_fields( $checkout ) {
         </span>
         </p>
         </div>
+        <div class="resort-summary-target"></div>
 <?php
 }
 
