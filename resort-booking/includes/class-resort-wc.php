@@ -31,8 +31,7 @@ add_filter( 'woocommerce_available_payment_gateways', array( $this, 'filter_gate
 add_action( 'woocommerce_checkout_order_processed', array( $this, 'adjust_order_status' ), 10, 3 );
 add_action( 'wp_ajax_resort_save_booking_session', array( $this, 'ajax_save_booking_session' ) );
 add_action( 'wp_ajax_nopriv_resort_save_booking_session', array( $this, 'ajax_save_booking_session' ) );
-add_action( 'wp_ajax_reload_booking_summary', array( $this, 'ajax_reload_booking_summary' ) );
-add_action( 'wp_ajax_nopriv_reload_booking_summary', array( $this, 'ajax_reload_booking_summary' ) );
+add_filter( 'woocommerce_update_order_review_fragments', array( $this, 'add_remaining_balance_fragment' ) );
 }
 
 /**
@@ -148,6 +147,7 @@ public function render_checkout_fields( $checkout ) {
         </span>
         </p>
         </div>
+        <div class="resort-summary-target"><?php echo wp_kses_post( $this->get_remaining_balance_markup() ); ?></div>
 <?php
 }
 
@@ -256,69 +256,17 @@ return;
                 return;
         }
 
-        $forced  = get_post_meta( $product->get_id(), '_resort_forced_date', true );
-        $has_forced_date = ! empty( $forced );
-        $accoms = get_post_meta( $product->get_id(), '_resort_accommodations', true );
-        $accoms = is_array( $accoms ) ? $accoms : array();
-        $meta_adult = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
-        $meta_child = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+        $amounts = $this->get_booking_amounts( $product, true );
 
-        if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
+        if ( empty( $amounts ) ) {
                 return;
         }
 
-        // Booking line prices are zeroed in maybe_zero_cart_price() to avoid quantity scaling.
-	$adults = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
-	$children = absint( WC()->session->get( 'resort_booking_children', 0 ) );
-	$selected = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
-	$default_accom = $has_forced_date && ! empty( $accoms ) && isset( $accoms[0]['name'] ) ? $accoms[0]['name'] : '';
-	$selected = ( empty( $selected ) && $default_accom ) ? $default_accom : $selected;
-$selected = sanitize_text_field( $selected );
-if ( empty( WC()->session->get( 'resort_booking_accommodation', '' ) ) && $selected ) {
-WC()->session->set( 'resort_booking_accommodation', $selected );
-}
-$payment  = sanitize_text_field( WC()->session->get( 'resort_payment_option', 'full' ) );
-
-$adult_rate = 0;
-	$child_rate = 0;
-	foreach ( $accoms as $row ) {
-	if ( isset( $row['name'] ) && $selected === $row['name'] ) {
-	$adult_rate = floatval( $row['adult'] );
-	$child_rate = floatval( $row['child'] );
-	break;
-	}
-	}
-
-	// Fallback to first accommodation if none matched.
-	if ( ( 0 === $adult_rate && 0 === $child_rate ) && ! empty( $accoms ) && isset( $accoms[0]['adult'], $accoms[0]['child'] ) ) {
-	$adult_rate = floatval( $accoms[0]['adult'] );
-	$child_rate = floatval( $accoms[0]['child'] );
-	}
-
-	// If we still have no rates, use meta overrides.
-	if ( 0 === $adult_rate && $meta_adult > 0 ) {
-	$adult_rate = $meta_adult;
-	}
-	if ( 0 === $child_rate && $meta_child > 0 ) {
-	$child_rate = $meta_child;
-	}
-
-	// If child rate is still zero, mirror adult rate so totals grow with headcount.
-	if ( 0 === $child_rate ) {
-	$child_rate = $adult_rate;
-	}
-
-	$total = ( $adults * $adult_rate ) + ( $children * $child_rate );
-	$fee   = ( 'deposit' === $payment ) ? $total * 0.5 : $total;
-	$remaining = ( 'deposit' === $payment ) ? $total - $fee : 0;
-
-WC()->session->set( 'resort_remaining_balance', $remaining );
-
-if ( $total > 0 ) {
-WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), $fee );
-} else {
-WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), 0 );
-}
+        if ( $amounts['total'] > 0 ) {
+                WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), $amounts['fee'] );
+        } else {
+                WC()->cart->add_fee( __( 'Booking Charge', 'resort-booking' ), 0 );
+        }
 }
 
 /**
@@ -447,13 +395,111 @@ wp_send_json_success();
 }
 
 /**
- * AJAX: reload summary.
+ * Expose remaining balance HTML for checkout fragments.
  */
-public function ajax_reload_booking_summary() {
-$remaining = WC()->session->get( 'resort_remaining_balance', 0 );
-echo wp_kses_post( '<div class="resort-summary">' . sprintf( __( 'Remaining balance: %s', 'resort-booking' ), wc_price( $remaining ) ) . '</div>' );
-die();
-}
+    public function add_remaining_balance_fragment( $fragments ) {
+        $fragments['.resort-summary-target'] = '<div class="resort-summary-target">' . wp_kses_post( $this->get_remaining_balance_markup() ) . '</div>';
+
+        return $fragments;
+    }
+
+    /**
+     * Calculate booking totals without mutating the cart.
+     *
+     * @param WC_Product $product Product object.
+     * @param bool       $persist_session Whether to persist derived values to the session.
+     * @return array|null
+     */
+    private function get_booking_amounts( $product, $persist_session = false ) {
+        if ( ! $product || ! $this->is_booking_product( $product ) ) {
+                return null;
+        }
+
+        $forced         = get_post_meta( $product->get_id(), '_resort_forced_date', true );
+        $has_forced_date = ! empty( $forced );
+        $accoms         = get_post_meta( $product->get_id(), '_resort_accommodations', true );
+        $accoms         = is_array( $accoms ) ? $accoms : array();
+        $meta_adult     = floatval( get_post_meta( $product->get_id(), '_resort_adult_price', true ) );
+        $meta_child     = floatval( get_post_meta( $product->get_id(), '_resort_child_price', true ) );
+
+        if ( empty( $accoms ) && $meta_adult <= 0 && $meta_child <= 0 ) {
+                return null;
+        }
+
+        // Booking line prices are zeroed in maybe_zero_cart_price() to avoid quantity scaling.
+        $adults        = absint( WC()->session->get( 'resort_booking_adults', 0 ) );
+        $children      = absint( WC()->session->get( 'resort_booking_children', 0 ) );
+        $selected      = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
+        $default_accom = $has_forced_date && ! empty( $accoms ) && isset( $accoms[0]['name'] ) ? $accoms[0]['name'] : '';
+        $selected      = ( empty( $selected ) && $default_accom ) ? $default_accom : $selected;
+        $selected      = sanitize_text_field( $selected );
+
+        if ( $persist_session && empty( WC()->session->get( 'resort_booking_accommodation', '' ) ) && $selected ) {
+                WC()->session->set( 'resort_booking_accommodation', $selected );
+        }
+
+        $payment = sanitize_text_field( WC()->session->get( 'resort_payment_option', 'full' ) );
+
+        $adult_rate = 0;
+        $child_rate = 0;
+        foreach ( $accoms as $row ) {
+                if ( isset( $row['name'] ) && $selected === $row['name'] ) {
+                        $adult_rate = floatval( $row['adult'] );
+                        $child_rate = floatval( $row['child'] );
+                        break;
+                }
+        }
+
+        // Fallback to first accommodation if none matched.
+        if ( ( 0 === $adult_rate && 0 === $child_rate ) && ! empty( $accoms ) && isset( $accoms[0]['adult'], $accoms[0]['child'] ) ) {
+                $adult_rate = floatval( $accoms[0]['adult'] );
+                $child_rate = floatval( $accoms[0]['child'] );
+        }
+
+        // If we still have no rates, use meta overrides.
+        if ( 0 === $adult_rate && $meta_adult > 0 ) {
+                $adult_rate = $meta_adult;
+        }
+        if ( 0 === $child_rate && $meta_child > 0 ) {
+                $child_rate = $meta_child;
+        }
+
+        // If child rate is still zero, mirror adult rate so totals grow with headcount.
+        if ( 0 === $child_rate ) {
+                $child_rate = $adult_rate;
+        }
+
+        $total     = ( $adults * $adult_rate ) + ( $children * $child_rate );
+        $fee       = ( 'deposit' === $payment ) ? $total * 0.5 : $total;
+        $remaining = ( 'deposit' === $payment ) ? $total - $fee : 0;
+
+        if ( $persist_session ) {
+                WC()->session->set( 'resort_remaining_balance', $remaining );
+        }
+
+        return array(
+                'total'     => $total,
+                'fee'       => $fee,
+                'remaining' => $remaining,
+        );
+    }
+
+    /**
+     * Build remaining balance markup for checkout.
+     *
+     * @return string
+     */
+    private function get_remaining_balance_markup() {
+        $product   = $this->get_cart_product();
+        $amounts   = $product ? $this->get_booking_amounts( $product, true ) : array();
+        $remaining = isset( $amounts['remaining'] ) ? floatval( $amounts['remaining'] ) : floatval( WC()->session->get( 'resort_remaining_balance', 0 ) );
+
+        if ( $remaining <= 0 ) {
+            return '';
+        }
+
+        return '<p class="resort-remaining resort-summary"><span class="resort-summary-label">' . esc_html__( 'Remaining balance:', 'resort-booking' ) . '</span> ' . wc_price( $remaining ) . '</p>';
+    }
 
 /**
  * Helper to fetch first cart product.

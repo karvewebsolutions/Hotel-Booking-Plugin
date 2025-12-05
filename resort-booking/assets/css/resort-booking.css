@@ -416,6 +416,10 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
     margin: 0;
 }
 
+.resort-summary-target {
+    margin-top: 12px;
+}
+
 .resort-summary {
     grid-column: 1 / -1;
     font-weight: 700;
