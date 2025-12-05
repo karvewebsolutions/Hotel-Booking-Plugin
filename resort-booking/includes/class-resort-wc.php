@@ -449,11 +449,15 @@ wp_send_json_success();
 /**
  * AJAX: reload summary.
  */
-public function ajax_reload_booking_summary() {
-$remaining = WC()->session->get( 'resort_remaining_balance', 0 );
-echo wp_kses_post( '<div class="resort-summary">' . sprintf( __( 'Remaining balance: %s', 'resort-booking' ), wc_price( $remaining ) ) . '</div>' );
-die();
-}
+    public function ajax_reload_booking_summary() {
+        if ( WC()->cart ) {
+            WC()->cart->calculate_totals();
+        }
+
+        $remaining = WC()->session->get( 'resort_remaining_balance', 0 );
+        echo wp_kses_post( '<div class="resort-summary">' . sprintf( __( 'Remaining balance: %s', 'resort-booking' ), wc_price( $remaining ) ) . '</div>' );
+        die();
+    }
 
 /**
  * Helper to fetch first cart product.
