@@ -21,7 +21,10 @@ add_action( 'add_meta_boxes_product', array( $this, 'add_product_metabox' ) );
 add_action( 'save_post_product', array( $this, 'save_product_meta' ), 10, 2 );
 add_action( 'admin_menu', array( $this, 'register_admin_menus' ) );
 add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
-add_action( 'wp_ajax_resort_save_checkout_section_order', array( $this, 'save_checkout_section_order' ) );
+	add_action( 'wp_ajax_resort_save_checkout_section_order', array( $this, 'save_checkout_section_order' ) );
+	add_action( 'wp_ajax_resort_save_checkout_layout', array( $this, 'save_checkout_layout' ) );
+	add_action( 'wp_ajax_resort_save_payment_sizing', array( $this, 'save_payment_sizing' ) );
+	add_action( 'wp_ajax_resort_save_checkout_layout_v2', array( $this, 'save_checkout_layout_v2' ) );
 }
 
 /**
@@ -37,14 +40,41 @@ esc_html__( 'Resort Booking Dates', 'resort-booking' ),
 array( $this, 'render_bulk_dates_page' )
 );
 
-add_submenu_page(
-'woocommerce',
-esc_html__( 'Checkout Section Order', 'resort-booking' ),
-esc_html__( 'Checkout Section Order', 'resort-booking' ),
-'manage_woocommerce',
-'resort-checkout-order',
-array( $this, 'render_checkout_order_page' )
-);
+	add_submenu_page(
+		'woocommerce',
+		esc_html__( 'Checkout Section Order', 'resort-booking' ),
+		esc_html__( 'Checkout Section Order', 'resort-booking' ),
+		'manage_woocommerce',
+		'resort-checkout-order',
+		array( $this, 'render_checkout_order_page' )
+	);
+
+	add_submenu_page(
+		'woocommerce',
+		esc_html__( 'Checkout Layout Editor', 'resort-booking' ),
+		esc_html__( 'Checkout Layout Editor', 'resort-booking' ),
+		'manage_woocommerce',
+		'resort-checkout-layout',
+		array( $this, 'render_checkout_layout_page' )
+	);
+
+	add_submenu_page(
+		'woocommerce',
+		esc_html__( 'Payment Options', 'resort-booking' ),
+		esc_html__( 'Payment Options', 'resort-booking' ),
+		'manage_woocommerce',
+		'resort-payment-options',
+		array( $this, 'render_payment_options_page' )
+	);
+
+	add_submenu_page(
+		'woocommerce',
+		esc_html__( 'Checkout Layout Editor', 'resort-booking' ),
+		esc_html__( 'Checkout Layout Editor', 'resort-booking' ),
+		'manage_woocommerce',
+		'resort-checkout-editor',
+		array( $this, 'render_checkout_editor_page' )
+	);
 }
 
 /**
@@ -267,6 +297,314 @@ wp_send_json_success();
 }
 
 /**
+ * Render checkout layout editor page.
+ */
+public function render_checkout_layout_page() {
+if ( ! current_user_can( 'manage_woocommerce' ) ) {
+return;
+}
+
+$layout = get_option( 'resort_checkout_layout', array() );
+$checkout_fields = WC()->checkout->get_checkout_fields();
+$sections = array( 'billing', 'shipping', 'order', 'additional' );
+?>
+<div class="wrap">
+<h1><?php esc_html_e( 'Checkout Layout Editor', 'resort-booking' ); ?></h1>
+<p><?php esc_html_e( 'Drag and drop fields to reorder within sections. Uncheck to hide fields. Save persists via AJAX.', 'resort-booking' ); ?></p>
+<div id="resort-layout-editor">
+<?php foreach ( $sections as $section ) : ?>
+<div class="resort-section" data-section="<?php echo esc_attr( $section ); ?>">
+<h3><?php echo esc_html( ucfirst( $section ) ); ?> Fields</h3>
+<ul class="resort-field-sortable">
+<?php
+$fields = isset( $checkout_fields[$section] ) ? $checkout_fields[$section] : array();
+$enabled = isset( $layout[$section]['enabled'] ) ? $layout[$section]['enabled'] : array_keys( $fields );
+$order = isset( $layout[$section]['order'] ) ? $layout[$section]['order'] : array_keys( $fields );
+
+foreach ( $order as $field_key ) {
+if ( ! isset( $fields[$field_key] ) ) continue;
+$field = $fields[$field_key];
+$checked = in_array( $field_key, $enabled ) ? 'checked' : '';
+?>
+<li class="resort-field-item" data-field="<?php echo esc_attr( $field_key ); ?>">
+<label>
+<input type="checkbox" class="resort-field-toggle" <?php echo esc_attr( $checked ); ?> />
+<span class="resort-field-label"><?php echo esc_html( $field['label'] ); ?> (<?php echo esc_html( $field_key ); ?>)</span>
+</label>
+</li>
+<?php } ?>
+</ul>
+</div>
+<?php endforeach; ?>
+</div>
+<button class="button button-primary" id="resort-save-layout" data-nonce="<?php echo esc_attr( wp_create_nonce( 'resort_checkout_layout' ) ); ?>"><?php esc_html_e( 'Save Layout', 'resort-booking' ); ?></button>
+</div>
+<?php
+}
+
+/**
+ * Save checkout layout via AJAX.
+ */
+public function save_checkout_layout() {
+if ( ! current_user_can( 'manage_woocommerce' ) ) {
+wp_send_json_error( esc_html__( 'Permission denied', 'resort-booking' ) );
+}
+
+$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+if ( ! wp_verify_nonce( $nonce, 'resort_checkout_layout' ) ) {
+wp_send_json_error( esc_html__( 'Invalid nonce', 'resort-booking' ) );
+}
+
+$layout = isset( $_POST['layout'] ) ? (array) wp_unslash( $_POST['layout'] ) : array();
+$layout = array_map( function( $section ) {
+return array(
+'order' => array_map( 'sanitize_text_field', $section['order'] ?? array() ),
+'enabled' => array_map( 'sanitize_text_field', $section['enabled'] ?? array() ),
+);
+}, $layout );
+update_option( 'resort_checkout_layout', $layout );
+wp_send_json_success();
+}
+
+/**
+ * Render payment options page.
+ */
+public function render_payment_options_page() {
+if ( ! current_user_can( 'manage_woocommerce' ) ) {
+return;
+}
+
+if ( isset( $_POST['resort_payment_options_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['resort_payment_options_nonce'] ) ), 'resort_payment_options_save' ) ) {
+$this->save_payment_options();
+echo '<div class="notice notice-success"><p>' . esc_html__( 'Payment options saved.', 'resort-booking' ) . '</p></div>';
+}
+
+$full_label = get_option( 'resort_payment_full_label', __( 'Pay Full Amount', 'resort-booking' ) );
+$deposit_label = get_option( 'resort_payment_deposit_label', __( 'Pay 50% Deposit', 'resort-booking' ) );
+$deposit_percentage = get_option( 'resort_deposit_percentage', 50 );
+$sizing = get_option( 'resort_payment_sizing', array(
+	'section_width' => 100,
+	'section_padding' => 10,
+	'option_gap' => 12,
+	'option_font_size' => 16,
+	'option_height' => 30,
+) );
+?>
+<div class="wrap">
+<h1><?php esc_html_e( 'Payment Options', 'resort-booking' ); ?></h1>
+
+<h2 class="nav-tab-wrapper">
+<a href="#labels" class="nav-tab nav-tab-active"><?php esc_html_e( 'Labels & Percentage', 'resort-booking' ); ?></a>
+<a href="#sizing" class="nav-tab"><?php esc_html_e( 'Sizing & Layout', 'resort-booking' ); ?></a>
+</h2>
+
+<div id="labels" class="tab-content">
+<form method="post">
+<?php wp_nonce_field( 'resort_payment_options_save', 'resort_payment_options_nonce' ); ?>
+<table class="form-table">
+<tr>
+<th scope="row"><?php esc_html_e( 'Full Payment Label', 'resort-booking' ); ?></th>
+<td><input type="text" name="resort_payment_full_label" value="<?php echo esc_attr( $full_label ); ?>" class="regular-text" /></td>
+</tr>
+<tr>
+<th scope="row"><?php esc_html_e( 'Deposit Payment Label', 'resort-booking' ); ?></th>
+<td><input type="text" name="resort_payment_deposit_label" value="<?php echo esc_attr( $deposit_label ); ?>" class="regular-text" /></td>
+</tr>
+<tr>
+<th scope="row"><?php esc_html_e( 'Deposit Percentage', 'resort-booking' ); ?></th>
+<td><input type="number" min="1" max="99" name="resort_deposit_percentage" value="<?php echo esc_attr( $deposit_percentage ); ?>" />%</td>
+</tr>
+</table>
+<p><button type="submit" class="button button-primary"><?php esc_html_e( 'Save Options', 'resort-booking' ); ?></button></p>
+</form>
+</div>
+
+<div id="sizing" class="tab-content" style="display:none;">
+<div class="resort-sizing-editor">
+<div class="resort-preview-section">
+<h3><?php esc_html_e( 'Live Preview', 'resort-booking' ); ?></h3>
+<div class="resort-payment-preview">
+<div class="resort-payment-options-preview">
+<span class="resort-payment-label-preview"><?php esc_html_e( 'Payment option', 'resort-booking' ); ?></span>
+<span class="resort-payment-group-preview">
+<label class="resort-payment-choice-preview"><input type="radio" name="preview_payment" value="full" checked /> <?php echo esc_html( $full_label ); ?></label>
+<label class="resort-payment-choice-preview"><input type="radio" name="preview_payment" value="deposit" /> <?php echo esc_html( $deposit_label ); ?></label>
+</span>
+</div>
+</div>
+</div>
+
+<div class="resort-controls-section">
+<h3><?php esc_html_e( 'Sizing Controls', 'resort-booking' ); ?></h3>
+<div class="resort-slider-group">
+<label><?php esc_html_e( 'Section Width (%)', 'resort-booking' ); ?>: <span id="section-width-value"><?php echo esc_html( $sizing['section_width'] ); ?></span></label>
+<div id="section-width-slider" class="resort-slider" data-value="<?php echo esc_attr( $sizing['section_width'] ); ?>"></div>
+</div>
+<div class="resort-slider-group">
+<label><?php esc_html_e( 'Section Padding (px)', 'resort-booking' ); ?>: <span id="section-padding-value"><?php echo esc_html( $sizing['section_padding'] ); ?></span></label>
+<div id="section-padding-slider" class="resort-slider" data-value="<?php echo esc_attr( $sizing['section_padding'] ); ?>"></div>
+</div>
+<div class="resort-slider-group">
+<label><?php esc_html_e( 'Option Gap (px)', 'resort-booking' ); ?>: <span id="option-gap-value"><?php echo esc_html( $sizing['option_gap'] ); ?></span></label>
+<div id="option-gap-slider" class="resort-slider" data-value="<?php echo esc_attr( $sizing['option_gap'] ); ?>"></div>
+</div>
+<div class="resort-slider-group">
+<label><?php esc_html_e( 'Option Font Size (px)', 'resort-booking' ); ?>: <span id="option-font-size-value"><?php echo esc_html( $sizing['option_font_size'] ); ?></span></label>
+<div id="option-font-size-slider" class="resort-slider" data-value="<?php echo esc_attr( $sizing['option_font_size'] ); ?>"></div>
+</div>
+<div class="resort-slider-group">
+<label><?php esc_html_e( 'Option Height (px)', 'resort-booking' ); ?>: <span id="option-height-value"><?php echo esc_html( $sizing['option_height'] ); ?></span></label>
+<div id="option-height-slider" class="resort-slider" data-value="<?php echo esc_attr( $sizing['option_height'] ); ?>"></div>
+</div>
+<button id="resort-save-sizing" class="button button-primary" data-nonce="<?php echo esc_attr( wp_create_nonce( 'resort_payment_sizing' ) ); ?>"><?php esc_html_e( 'Save Sizing', 'resort-booking' ); ?></button>
+</div>
+</div>
+</div>
+
+
+</div>
+<?php
+}
+
+/**
+ * Save payment options.
+ */
+private function save_payment_options() {
+$full_label = isset( $_POST['resort_payment_full_label'] ) ? sanitize_text_field( wp_unslash( $_POST['resort_payment_full_label'] ) ) : '';
+$deposit_label = isset( $_POST['resort_payment_deposit_label'] ) ? sanitize_text_field( wp_unslash( $_POST['resort_payment_deposit_label'] ) ) : '';
+$percentage = isset( $_POST['resort_deposit_percentage'] ) ? absint( $_POST['resort_deposit_percentage'] ) : 50;
+
+update_option( 'resort_payment_full_label', $full_label );
+update_option( 'resort_payment_deposit_label', $deposit_label );
+update_option( 'resort_deposit_percentage', $percentage );
+}
+
+/**
+ * Save payment sizing via AJAX.
+ */
+public function save_payment_sizing() {
+if ( ! current_user_can( 'manage_woocommerce' ) ) {
+wp_send_json_error( esc_html__( 'Permission denied', 'resort-booking' ) );
+}
+
+$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+if ( ! wp_verify_nonce( $nonce, 'resort_payment_sizing' ) ) {
+wp_send_json_error( esc_html__( 'Invalid nonce', 'resort-booking' ) );
+}
+
+$sizing = isset( $_POST['sizing'] ) ? (array) wp_unslash( $_POST['sizing'] ) : array();
+$sizing = array_map( 'absint', $sizing );
+update_option( 'resort_payment_sizing', $sizing );
+wp_send_json_success();
+}
+
+/**
+ * Render checkout editor page.
+ */
+public function render_checkout_editor_page() {
+if ( ! current_user_can( 'manage_woocommerce' ) ) {
+return;
+}
+
+$layout = get_option( 'resort_checkout_layout_v2', array(
+'version' => 1,
+'sections' => array(
+array('id' => 'billing', 'order' => 1, 'visible' => true, 'styles' => array('background' => '#f8f9fa', 'padding' => '20px')),
+array('id' => 'shipping', 'order' => 2, 'visible' => true, 'styles' => array('background' => '#f8f9fa', 'padding' => '20px')),
+array('id' => 'order', 'order' => 3, 'visible' => true, 'styles' => array('background' => '#f8f9fa', 'padding' => '20px')),
+array('id' => 'payment', 'order' => 4, 'visible' => true, 'styles' => array('background' => '#f8f9fa', 'padding' => '20px')),
+)
+));
+?>
+<div class="wrap">
+<h1><?php esc_html_e( 'Checkout Layout Editor', 'resort-booking' ); ?></h1>
+<div class="resort-editor-header">
+<button id="resort-save-layout" class="button button-primary"><?php esc_html_e( 'Save Layout', 'resort-booking' ); ?></button>
+<button id="resort-preview-layout" class="button"><?php esc_html_e( 'Preview', 'resort-booking' ); ?></button>
+<button id="resort-reset-layout" class="button"><?php esc_html_e( 'Reset to Default', 'resort-booking' ); ?></button>
+</div>
+
+<div class="resort-editor-container">
+<div class="resort-editor-canvas">
+<div class="resort-checkout-preview">
+<?php foreach ( $layout['sections'] as $section ) : ?>
+<div class="resort-section-block" data-section-id="<?php echo esc_attr( $section['id'] ); ?>" style="background: <?php echo esc_attr( $section['styles']['background'] ?? '#f8f9fa' ); ?>; padding: <?php echo esc_attr( $section['styles']['padding'] ?? '20px' ); ?>;">
+<div class="resort-section-header">
+<h4><?php echo esc_html( ucfirst( $section['id'] ) ); ?> Section</h4>
+<span class="resort-drag-handle">⋮⋮</span>
+</div>
+<div class="resort-section-content">
+<p><?php echo esc_html( ucfirst( $section['id'] ) ); ?> fields will appear here.</p>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+</div>
+
+<div class="resort-editor-sidebar">
+<div class="resort-sidebar-panel">
+<h3><?php esc_html_e( 'Section Settings', 'resort-booking' ); ?></h3>
+<div id="resort-section-settings">
+<p><?php esc_html_e( 'Click on a section to edit its settings.', 'resort-booking' ); ?></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script type="text/template" id="section-settings-template">
+<div class="resort-settings-form">
+<h4><%= title %> Settings</h4>
+<div class="resort-setting-group">
+<label><?php esc_html_e( 'Background Color', 'resort-booking' ); ?></label>
+<input type="text" class="resort-color-picker" value="<%= background %>" />
+</div>
+<div class="resort-setting-group">
+<label><?php esc_html_e( 'Padding (px)', 'resort-booking' ); ?></label>
+<input type="number" class="resort-padding-input" value="<%= padding %>" min="0" max="100" />
+</div>
+<div class="resort-setting-group">
+<label><?php esc_html_e( 'Visible', 'resort-booking' ); ?></label>
+<input type="checkbox" class="resort-visibility-toggle" <%= visible ? 'checked' : '' %> />
+</div>
+</div>
+</script>
+<?php
+}
+
+/**
+ * Save checkout layout v2 via AJAX.
+ */
+public function save_checkout_layout_v2() {
+if ( ! current_user_can( 'manage_woocommerce' ) ) {
+wp_send_json_error( esc_html__( 'Permission denied', 'resort-booking' ) );
+}
+
+$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+if ( ! wp_verify_nonce( $nonce, 'resort_checkout_layout_v2' ) ) {
+wp_send_json_error( esc_html__( 'Invalid nonce', 'resort-booking' ) );
+}
+
+$layout = isset( $_POST['layout'] ) ? (array) wp_unslash( $_POST['layout'] ) : array();
+$layout = array(
+'version' => 1,
+'sections' => array_map( function( $section ) {
+return array(
+'id' => sanitize_text_field( $section['id'] ),
+'order' => absint( $section['order'] ),
+'visible' => (bool) $section['visible'],
+'styles' => array(
+'background' => sanitize_hex_color( $section['styles']['background'] ?? '#f8f9fa' ),
+'padding' => sanitize_text_field( $section['styles']['padding'] ?? '20px' ),
+),
+);
+}, $layout['sections'] ?? array() )
+);
+update_option( 'resort_checkout_layout_v2', $layout );
+wp_send_json_success();
+}
+
+/**
  * Enqueue admin assets.
  *
  * @param string $hook Current page hook.
@@ -276,17 +614,57 @@ if ( 'product' === get_post_type() ) {
 wp_enqueue_script( 'resort-booking-admin', RESORT_BOOKING_URL . 'assets/js/resort-booking.js', array( 'jquery' ), RESORT_BOOKING_VERSION, true );
 }
 
-if ( 'woocommerce_page_resort-checkout-order' === $hook ) {
-wp_enqueue_script( 'jquery-ui-sortable' );
-wp_enqueue_script( 'resort-booking-admin-order', RESORT_BOOKING_URL . 'assets/js/admin-section-order.js', array( 'jquery', 'jquery-ui-sortable' ), RESORT_BOOKING_VERSION, true );
-wp_localize_script(
-'resort-booking-admin-order',
-'resortCheckoutOrder',
-array(
-'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-)
-);
-}
+	if ( 'woocommerce_page_resort-checkout-order' === $hook ) {
+		wp_enqueue_script( 'jquery-ui-sortable' );
+		wp_enqueue_script( 'resort-booking-admin-order', RESORT_BOOKING_URL . 'assets/js/admin-section-order.js', array( 'jquery', 'jquery-ui-sortable' ), RESORT_BOOKING_VERSION, true );
+		wp_localize_script(
+			'resort-booking-admin-order',
+			'resortCheckoutOrder',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			)
+		);
+	}
+
+	if ( 'woocommerce_page_resort-checkout-layout' === $hook ) {
+		wp_enqueue_script( 'jquery-ui-sortable' );
+		wp_enqueue_script( 'resort-booking-admin-layout', RESORT_BOOKING_URL . 'assets/js/admin-layout-editor.js', array( 'jquery', 'jquery-ui-sortable' ), RESORT_BOOKING_VERSION, true );
+		wp_localize_script(
+			'resort-booking-admin-layout',
+			'resortCheckoutLayout',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			)
+		);
+	}
+
+	if ( 'woocommerce_page_resort-payment-options' === $hook ) {
+		wp_enqueue_script( 'jquery-ui-slider' );
+		wp_enqueue_script( 'jquery-ui-resizable' );
+		wp_enqueue_script( 'resort-booking-admin-sizing', RESORT_BOOKING_URL . 'assets/js/admin-sizing-editor.js', array( 'jquery', 'jquery-ui-slider', 'jquery-ui-resizable' ), RESORT_BOOKING_VERSION, true );
+		wp_localize_script(
+			'resort-booking-admin-sizing',
+			'resortPaymentSizing',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			)
+		);
+	}
+
+	if ( 'woocommerce_page_resort-checkout-editor' === $hook ) {
+		wp_enqueue_script( 'jquery-ui-sortable' );
+		wp_enqueue_script( 'jquery-ui-draggable' );
+		wp_enqueue_script( 'wp-color-picker' );
+		wp_enqueue_style( 'wp-color-picker' );
+		wp_enqueue_script( 'resort-booking-checkout-editor', RESORT_BOOKING_URL . 'assets/js/checkout-editor.js', array( 'jquery', 'jquery-ui-sortable', 'jquery-ui-draggable', 'wp-color-picker' ), RESORT_BOOKING_VERSION, true );
+		wp_localize_script(
+			'resort-booking-checkout-editor',
+			'resortCheckoutEditor',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			)
+		);
+	}
 }
 
 /**

@@ -324,6 +324,10 @@ body.woocommerce-checkout .site-header .container {
     padding-bottom: 10px;
 }
 
+.woocommerce-additional-fields > h3 {
+    margin-top: 0;
+}
+
 
 
 
@@ -340,9 +344,8 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
     border-radius: 10px;
     padding: 16px;
     margin-top: 1em;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px 18px;
+    display: flex;
+    flex-direction: column;
 }
 
 .resort-booking-checkout h3 {
@@ -354,10 +357,42 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
 }
 
 .resort-booking-checkout .form-row {
-    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.resort-booking-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0;
+    align-items: start;
+}
+
+.resort-booking-row .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.resort-booking-row .form-row label {
+    word-wrap: break-word;
+    hyphens: auto;
+    font-weight: 600;
+    color: #001219;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .resort-booking-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .resort-booking-checkout {
+        padding: 12px;
+    }
 }
 
 .resort-booking-checkout label {
@@ -385,16 +420,18 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
 }
 
 .resort-payment-options {
-    align-self: flex-start;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     flex-wrap: wrap;
+    flex-direction: row;
 }
 
 .resort-payment-label {
     font-weight: 600;
     color: #001219;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .resort-payment-group {
@@ -402,6 +439,7 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    flex-direction: row;
 }
 
 .resort-payment-choice {
@@ -410,6 +448,7 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
     align-items: center;
     gap: 8px;
     margin: 0;
+    flex-shrink: 0;
 }
 
 .resort-payment-options input[type="radio"] {
@@ -435,4 +474,252 @@ body.paragliding-product-in-cart #booking-summary-wrapper {
     min-width: 140px;
     font-weight: 600;
     color: #001219;
+}
+
+/* ────── Checkout Layout Editor ────── */
+.resort-editor-header {
+    margin-bottom: 20px;
+}
+
+.resort-editor-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.resort-editor-canvas {
+    flex: 1;
+    min-height: 600px;
+    border: 2px dashed #ddd;
+    padding: 20px;
+    background: #f9f9fa;
+}
+
+.resort-checkout-preview {
+    min-height: 500px;
+}
+
+.resort-section-block {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.resort-section-block:hover {
+    border-color: #005f73;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.resort-section-block.selected {
+    border-color: #005f73;
+    box-shadow: 0 0 0 2px rgba(0, 95, 115, 0.2);
+}
+
+.resort-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.resort-section-header h4 {
+    margin: 0;
+    color: #005f73;
+    font-size: 16px;
+}
+
+.resort-drag-handle {
+    cursor: move;
+    color: #999;
+    font-size: 18px;
+    user-select: none;
+}
+
+.resort-section-content {
+    color: #666;
+}
+
+.resort-editor-sidebar {
+    width: 300px;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 20px;
+}
+
+.resort-sidebar-panel h3 {
+    margin-top: 0;
+    color: #005f73;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.resort-settings-form h4 {
+    margin-top: 0;
+    color: #005f73;
+    font-size: 14px;
+}
+
+.resort-setting-group {
+    margin-bottom: 15px;
+}
+
+.resort-setting-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #001219;
+}
+
+.resort-color-picker {
+    width: 100%;
+}
+
+.resort-padding-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* ────── Admin Payment Sizing ────── */
+.resort-sizing-editor {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.resort-preview-section {
+    flex: 1;
+    max-width: 400px;
+}
+
+.resort-preview-section h3 {
+    margin-top: 0;
+    color: #005f73;
+}
+
+.resort-payment-preview {
+    border: 1px solid #ddd;
+    padding: 20px;
+    background: #f9f9fa;
+    border-radius: 8px;
+}
+
+.resort-payment-options-preview {
+    margin: 0;
+}
+
+.resort-payment-group-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.resort-payment-choice-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.resort-controls-section {
+    flex: 1;
+}
+
+.resort-controls-section h3 {
+    margin-top: 0;
+    color: #005f73;
+}
+
+.resort-slider-group {
+    margin-bottom: 15px;
+}
+
+.resort-slider-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #001219;
+}
+
+.resort-slider {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.ui-slider .ui-slider-handle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #005f73;
+    border: none;
+    cursor: pointer;
+}
+
+.ui-slider .ui-slider-range {
+    background: #94d2bd;
+}
+
+.ui-slider {
+    border: 1px solid #ddd;
+    background: #f0f0f0;
+    height: 8px;
+    border-radius: 4px;
+}
+
+/* ────── Admin Layout Editor ────── */
+#resort-layout-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.resort-section {
+    border: 1px solid #ddd;
+    padding: 15px;
+    background: #f9f9f9;
+}
+
+.resort-section h3 {
+    margin-top: 0;
+    color: #005f73;
+}
+
+.resort-field-sortable {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.resort-field-item {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.resort-field-item:hover {
+    background: #f0f0f0;
+}
+
+.resort-field-placeholder {
+    background: #e0e0e0;
+    border: 1px dashed #999;
+    height: 40px;
+}
+
+.resort-field-toggle {
+    margin: 0;
+}
+
+.resort-field-label {
+    flex: 1;
+    font-weight: 500;
 }

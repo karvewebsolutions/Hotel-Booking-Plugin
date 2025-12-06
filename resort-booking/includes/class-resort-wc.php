@@ -17,7 +17,7 @@ class Resort_Booking_WC {
  * Constructor hooks WC actions.
  */
 public function __construct() {
-add_action( 'init', array( $this, 'maybe_handle_booking_form' ) );
+add_action( 'template_redirect', array( $this, 'maybe_handle_booking_form' ) );
 add_action( 'woocommerce_after_order_notes', array( $this, 'render_checkout_fields' ) );
 add_action( 'woocommerce_checkout_before_customer_details', array( $this, 'render_checkout_sections' ), 5 );
 add_action( 'woocommerce_checkout_process', array( $this, 'validate_checkout_fields' ) );
@@ -109,44 +109,49 @@ public function render_checkout_fields( $checkout ) {
                 WC()->session->set( 'resort_booking_children', 0 );
         }
         ?>
-        <div class="resort-booking-checkout">
+<div class="resort-booking-checkout">
         <h3><?php esc_html_e( 'Resort Booking Details', 'resort-booking' ); ?></h3>
-	<p class="form-row form-row-wide">
-	<label><?php esc_html_e( 'Booking date', 'resort-booking' ); ?></label>
-<input type="text" name="resort_booking_date" value="<?php echo esc_attr( $date ); ?>" readonly />
-</p>
-<?php if ( ! $has_forced_date ) : ?>
-	<p class="form-row form-row-first">
-	<label for="resort_booking_accommodation"><?php esc_html_e( 'Accommodation', 'resort-booking' ); ?></label>
-	<select name="resort_booking_accommodation" id="resort_booking_accommodation" class="input-text">
-	<option value=""><?php esc_html_e( 'Select option', 'resort-booking' ); ?></option>
-	<?php foreach ( $accom as $row ) : ?>
-	<option value="<?php echo esc_attr( $row['name'] ); ?>" <?php selected( $selected_accom, $row['name'] ); ?> data-adult="<?php echo esc_attr( $row['adult'] ); ?>" data-child="<?php echo esc_attr( $row['child'] ); ?>"><?php echo esc_html( $row['name'] ); ?></option>
-	<?php endforeach; ?>
-	</select>
-	</p>
-	<?php else : ?>
-	    <?php if ( $default_accom ) : ?>
-	        <input type="hidden" name="resort_booking_accommodation" value="<?php echo esc_attr( $selected_accom ); ?>" />
-	    <?php endif; ?>
-	<?php endif; ?>
-        <p class="form-row form-row-last">
+        <?php if ( ! $has_forced_date ) : ?>
+                <p class="form-row form-row-wide">
+                <label for="resort_booking_accommodation"><?php esc_html_e( 'Accommodation', 'resort-booking' ); ?></label>
+                <select name="resort_booking_accommodation" id="resort_booking_accommodation" class="input-text">
+                <option value=""><?php esc_html_e( 'Select option', 'resort-booking' ); ?></option>
+                <?php foreach ( $accom as $row ) : ?>
+                <option value="<?php echo esc_attr( $row['name'] ); ?>" <?php selected( $selected_accom, $row['name'] ); ?> data-adult="<?php echo esc_attr( $row['adult'] ); ?>" data-child="<?php echo esc_attr( $row['child'] ); ?>"><?php echo esc_html( $row['name'] ); ?></option>
+                <?php endforeach; ?>
+                </select>
+                </p>
+        <?php else : ?>
+            <?php if ( $default_accom ) : ?>
+                <input type="hidden" name="resort_booking_accommodation" value="<?php echo esc_attr( $selected_accom ); ?>" />
+            <?php endif; ?>
+        <?php endif; ?>
+	<div class="resort-booking-row">
+        <p class="form-row">
         <label for="resort_booking_adults"><?php esc_html_e( 'Adults', 'resort-booking' ); ?></label>
         <input type="number" min="0" name="resort_booking_adults" id="resort_booking_adults" value="<?php echo esc_attr( $adults ); ?>" class="input-text" />
         </p>
         <?php if ( $has_child_pricing ) : ?>
-                <p class="form-row form-row-first">
+                <p class="form-row">
                 <label for="resort_booking_children"><?php esc_html_e( 'Children', 'resort-booking' ); ?></label>
                 <input type="number" min="0" name="resort_booking_children" id="resort_booking_children" value="<?php echo esc_attr( $children ); ?>" class="input-text" />
                 </p>
         <?php endif; ?>
+	</div>
+	<div class="resort-booking-row">
+	<p class="form-row form-row-first">
+	<label><?php esc_html_e( 'Booking date', 'resort-booking' ); ?></label>
+<input type="text" name="resort_booking_date" value="<?php echo esc_attr( $date ); ?>" readonly />
+</p>
         <p class="form-row form-row-last resort-payment-options">
         <span class="resort-payment-label"><?php esc_html_e( 'Payment option', 'resort-booking' ); ?></span>
         <span class="resort-payment-group">
-                <label class="resort-payment-choice"><input type="radio" name="resort_payment_option" value="full" <?php checked( $payment_option, 'full' ); ?> /> <?php esc_html_e( 'Pay Full Amount', 'resort-booking' ); ?></label>
-                <label class="resort-payment-choice"><input type="radio" name="resort_payment_option" value="deposit" <?php checked( $payment_option, 'deposit' ); ?> /> <?php esc_html_e( 'Pay 50% Deposit', 'resort-booking' ); ?></label>
+                <label class="resort-payment-choice"><input type="radio" name="resort_payment_option" value="full" <?php checked( $payment_option, 'full' ); ?> /> <?php esc_html_e( 'Full', 'resort-booking' ); ?></label>
+                <label class="resort-payment-choice"><input type="radio" name="resort_payment_option" value="deposit" <?php checked( $payment_option, 'deposit' ); ?> /> <?php esc_html_e( '50%', 'resort-booking' ); ?></label>
         </span>
         </p>
+	</div>
+
         </div>
         <div class="resort-summary-target"></div>
 <?php
@@ -405,8 +410,18 @@ wp_send_json_success();
 
         $product   = $this->get_cart_product();
         $amounts   = $product ? $this->get_booking_amounts( $product, true ) : array();
+        $total     = isset( $amounts['total'] ) ? $amounts['total'] : WC()->session->get( 'resort_total_amount', 0 );
         $remaining = isset( $amounts['remaining'] ) ? $amounts['remaining'] : WC()->session->get( 'resort_remaining_balance', 0 );
-        echo wp_kses_post( '<div class="resort-summary">' . sprintf( __( 'Remaining balance: %s', 'resort-booking' ), wc_price( $remaining ) ) . '</div>' );
+        
+        $output = '';
+        if ( $remaining > 0 ) {
+            $output .= '<div class="resort-summary">' . sprintf( __( 'Remaining balance: %s', 'resort-booking' ), wc_price( $remaining ) ) . '</div>';
+            $output .= '<div class="resort-summary">' . sprintf( __( 'Total amount: %s', 'resort-booking' ), wc_price( $total ) ) . '</div>';
+        } else {
+            $output .= '<div class="resort-summary">' . sprintf( __( 'Total amount: %s', 'resort-booking' ), wc_price( $total ) ) . '</div>';
+        }
+        
+        echo wp_kses_post( $output );
         die();
     }
 

@@ -1,37 +1,286 @@
-# Repository Guidelines
+# Resort Booking Plugin - Agent Guidelines
 
-## Project Structure & Module Organization
-- Root plugin lives in `resort-booking/`; activate by placing that folder in `wp-content/plugins/` of a WooCommerce-enabled site.
-- Entry point `resort-booking.php` registers hooks and loads classes from `includes/`.
-- Business logic sits in `includes/` (`class-resort-booking.php`, `class-resort-admin.php`, `class-resort-frontend.php`, `class-resort-wc.php`), separated by concern.
-- Client assets are under `assets/` (`css/resort-booking.css`, `js/resort-booking.js`, `js/admin-section-order.js`); keep third-party libraries checked in here.
-- Documentation for admins lives in `README.md` and `readme.txt` within `resort-booking/`.
+## Quick Start
+- **Install**: Copy `resort-booking/` to `wp-content/plugins/` and activate "Resort Booking"
+- **Test URL**: Visit product page with booking shortcode to verify functionality
+- **Dependencies**: Requires WooCommerce + WordPress 5.0+
 
-## Build, Test, and Development Commands
-- Install locally by copying `resort-booking/` into a WordPress `wp-content/plugins/` directory and activating **Resort Booking**.
-- Quick syntax check: `find resort-booking -name '*.php' -print0 | xargs -0 -n1 php -l`.
-- Optional lint with WordPress standards if you have `phpcs` installed: `phpcs --standard=WordPress --ignore=vendor resort-booking`.
-- Current plugin version: 1.1.1 (update `resort-booking.php` header + `readme.txt` stable tag + changelog when bumping).
-- Pricing assumption: product base price can stay zero; booking charges come from accommodations or the `_resort_adult_price` / `_resort_child_price` product meta.
-- To test UI/flows, spin up WordPress (e.g., `wp-env start` or a local LAMP stack) with WooCommerce active, then exercise the booking shortcode and admin pages.
+## Build, Test & Development Commands
 
-## Coding Style & Naming Conventions
-- Follow WordPress PHP standards: 4-space indentation, braces on the same line, Yoda conditions where applicable, and spacing around operators.
-- Escape output (`esc_html__`, `esc_attr__`) and sanitize input (`sanitize_text_field`, `wp_unslash`) consistently; mirror existing patterns in `class-resort-admin.php`.
-- Prefix hooks, functions, and meta keys with `resort_`; classes follow `Resort_Booking_*`.
-- Keep translations loaded via the `resort-booking` text domain for any new user-facing strings.
+### Single Test Commands
+```bash
+# Quick syntax check (all PHP files)
+find resort-booking -name '*.php' -print0 | xargs -0 -n1 php -l
 
-## Testing Guidelines
-- No automated test suite is present; rely on manual verification in a WooCommerce store.
-- Validate flows in README: booking with forced/blocked dates, checkout submission (adults/children counts), fee calculation for full vs deposit, thank-you page balance, COD hidden on deposit, admin bulk CSV import, and checkout section drag/drop order.
-- When fixing bugs, add minimal regression steps to PR descriptions; if you add tooling, document how to run it.
+# Lint with WordPress standards (if phpcs installed)
+phpcs --standard=WordPress --ignore=vendor resort-booking
 
-## Commit & Pull Request Guidelines
-- Use short, imperative commit subjects (e.g., `Add blocked date validation`); include context in the body only when needed.
-- For PRs, link related issues, describe behavior changes, and attach screenshots/GIFs for UI/admin updates (metaboxes, settings pages).
-- Note environment used for verification (WordPress + WooCommerce versions, browser). Mark any known gaps or manual checks not run.
+# Run specific test file
+php resort-booking/tests/test-bulk-dates.php
 
-## Security & Configuration Tips
-- Do not commit secrets; rely on WordPress/WooCommerce config files outside the repo.
-- Always validate and sanitize incoming `$_POST`/`$_GET` data and escape all output rendered in admin pages or shortcodes.
-- Keep compatibility in mind: avoid functions requiring newer PHP/WP than the plugin already supports; test against the minimum WooCommerce version you target.
+# Check plugin activation
+wp plugin activate resort-booking --allow-root
+```
+
+### Development Workflow
+```bash
+# Watch for changes and auto-reload
+npm run dev  # if package.json exists, or manual file watching
+
+# Clear caches after changes
+wp cache flush
+wp transient delete --all
+```
+
+## Code Style & Standards
+
+### PHP Standards
+- **Indentation**: 4 spaces (no tabs)
+- **Braces**: Same line: `if ( $condition ) {`
+- **Spacing**: Around operators: `$value = $a + $b;`
+- **Yoda Conditions**: When applicable: `if ( true === $condition )`
+- **Line endings**: LF only, no trailing whitespace
+- **Max line length**: 120 characters
+
+### Naming Conventions
+- **Classes**: `Resort_Booking_*` (PascalCase)
+- **Methods**: `snake_case` (lowercase with underscores)
+- **Variables**: `snake_case` (lowercase with underscores)
+- **Constants**: `UPPER_SNAKE_CASE` (uppercase with underscores)
+- **Hooks**: `resort_` prefix for actions/filters
+- **Meta Keys**: `_resort_` prefix for post meta
+
+### Import & File Organization
+```php
+// Standard header for all files
+/**
+ * File purpose description.
+ *
+ * @package ResortBooking
+ * @since 1.0.0
+ */
+
+// Use WordPress functions only
+wp_enqueue_script( $handle, $path, $deps, $ver, $in_footer );
+wp_enqueue_style( $handle, $path, $deps, $ver, $media );
+```
+
+### Error Handling
+```php
+// Always validate and sanitize
+$product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
+$date = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
+
+// Use WordPress error handling
+if ( empty( $product_id ) ) {
+    wc_add_notice( __( 'Product ID is required.', 'resort-booking' ), 'error' );
+    return;
+}
+
+// Graceful fallbacks
+$accommodations = get_post_meta( $product_id, '_resort_accommodations', true );
+$accommodations = is_array( $accommodations ) ? $accommodations : array();
+```
+
+### Security & Validation
+```php
+// Nonce verification
+if ( ! isset( $_POST['resort_booking_nonce'] ) 
+    || ! wp_verify_nonce( $_POST['resort_booking_nonce'], 'resort_booking_form' ) ) {
+    wp_die( 'Security check failed' );
+}
+
+// User capability checks
+if ( ! current_user_can( 'manage_options' ) ) {
+    wp_die( 'Insufficient permissions' );
+}
+
+// Data sanitization
+$adults = isset( $_POST['adults'] ) ? absint( $_POST['adults'] ) : 0;
+$accommodation = sanitize_text_field( wp_unslash( $_POST['accommodation'] ) );
+
+// Output escaping
+echo esc_html( $user_string );
+echo esc_attr( $attribute_value );
+```
+
+### Database & Meta Operations
+```php
+// Use WordPress meta functions
+update_post_meta( $post_id, '_resort_accommodations', $accommodations );
+$accommodations = get_post_meta( $post_id, '_resort_accommodations', true );
+
+// Session handling (WooCommerce)
+WC()->session->set( 'resort_booking_date', $date );
+$date = WC()->session->get( 'resort_booking_date' );
+```
+
+### JavaScript Standards
+```javascript
+// Use jQuery if already loaded
+(function( $ ) {
+    'use strict';
+    
+    // Your code here
+})( jQuery );
+
+// Event delegation
+$( document.body ).on( 'change', '.resort-booking-field', function() {
+    // Handle dynamic content
+});
+
+// AJAX with WordPress patterns
+$.post( resortBooking.ajaxUrl, {
+    action: 'resort_save_booking_session',
+    nonce: resortBooking.nonce,
+    data: payload
+}, function( response ) {
+    if ( response.success ) {
+        // Success handling
+    }
+});
+```
+
+### CSS Architecture
+```css
+/* Use BEM-style naming */
+.resort-booking { }
+.resort-booking__field { }
+.resort-booking--modifier { }
+
+/* Mobile-first responsive */
+@media (min-width: 768px) {
+    /* Desktop styles */
+}
+
+/* WooCommerce integration */
+.woocommerce-checkout .resort-booking-field {
+    /* Specific checkout overrides */
+}
+```
+
+## Testing Strategy
+
+### Manual Testing Checklist
+- [ ] Booking form submission redirects to checkout
+- [ ] Accommodation options display correctly
+- [ ] Date picker shows blocked dates
+- [ ] Adults/children fields validate properly
+- [ ] Payment options (Full/50%) work
+- [ ] Cart calculates correct fees
+- [ ] Checkout saves all meta data
+- [ ] Thank you page shows balance
+- [ ] Admin settings save correctly
+- [ ] Bulk date import works
+
+### Cross-Browser Testing
+- Chrome (latest)
+- Firefox (latest) 
+- Safari (latest)
+- Edge (latest)
+
+### WordPress Version Testing
+- WordPress 5.0+ (minimum supported)
+- WooCommerce 5.0+ (minimum supported)
+- PHP 7.4+ (minimum supported)
+
+## Key Architecture Patterns
+
+### Class Structure
+```php
+class Resort_Booking_Component {
+    public function __construct() {
+        add_action( 'init', array( $this, 'init' ) );
+    }
+    
+    public function init() {
+        // Initialization logic
+    }
+    
+    private function helper_method() {
+        // Internal utilities
+    }
+}
+```
+
+### Hook Integration
+```php
+// WooCommerce hooks
+add_action( 'woocommerce_checkout_process', array( $this, 'validate_checkout' ) );
+add_filter( 'woocommerce_get_price_html', array( $this, 'filter_price' ) );
+
+// WordPress hooks
+add_action( 'init', array( $this, 'register_post_type' ) );
+add_filter( 'the_content', array( $this, 'filter_content' ) );
+```
+
+## Common Issues & Solutions
+
+### Booking Form Not Submitting
+- **Cause**: Missing nonce or wrong hook priority
+- **Fix**: Use `template_redirect` hook, verify nonce exists
+
+### AJAX Not Working
+- **Cause**: Missing action hooks or wrong data format
+- **Fix**: Register both `wp_ajax_*` and `wp_ajax_nopriv_*` actions
+
+### Styles Not Loading
+- **Cause**: Wrong dependency order or missing wp_enqueue_scripts action
+- **Fix**: Check hook priority, use proper dependencies
+
+### Session Data Lost
+- **Cause**: WooCommerce cart cleared or session timeout
+- **Fix**: Persist data immediately, use WC()->session properly
+
+## Performance Guidelines
+
+### Database Queries
+- Use `WP_Query` with proper parameters
+- Cache expensive operations with `wp_cache_get/set`
+- Avoid `SELECT *` - specify exact columns needed
+
+### Asset Loading
+- Load scripts only on required pages: `is_checkout()`, `is_product()`
+- Minify assets in production
+- Use WordPress script localization
+
+## Debugging Tools
+
+### WordPress Debug
+```php
+// Enable in wp-config.php
+define( 'WP_DEBUG', true );
+define( 'WP_DEBUG_LOG', true );
+
+// Debug output
+error_log( 'Resort Booking: ' . $message );
+wc_add_notice( $message, 'notice' ); // For admin visibility
+```
+
+### Browser Console
+```javascript
+// Debug logging
+console.log( 'Resort Booking:', data );
+
+// AJAX debugging
+$.ajaxSetup({
+    error: function( xhr, status, error ) {
+        console.error( 'AJAX Error:', error );
+    }
+});
+```
+
+## Deployment Notes
+
+### Version Bumping
+1. Update `resort-booking.php` header version
+2. Update `readme.txt` stable tag
+3. Add changelog entry to README.md
+4. Commit with version number
+
+### Production Checklist
+- [ ] Run `phpcs` linting
+- [ ] Test all user workflows
+- [ ] Verify no debug code left
+- [ ] Check all translations are proper
+- [ ] Confirm assets are minified (if applicable)
