@@ -54,26 +54,12 @@ payment: $( 'input[name="resort_payment_option"]:checked' ).val(),
 
 $.post( config.ajaxUrl, payload, function() {
 $( document.body ).trigger( 'update_checkout' );
-reloadSummary();
 } );
 }
 
 function triggerOnLoad() {
 // Trigger one sync on first paint to ensure fees appear even before user edits fields.
 syncToSession();
-}
-
-function reloadSummary() {
-$.post( config.ajaxUrl, { action: 'reload_booking_summary' }, function( html ) {
-var $target = $( '.resort-summary-target' );
-
-if ( ! $target.length ) {
-  $target = $( '.resort-booking-checkout' );
-}
-
-$target.find( '.resort-summary' ).remove();
-$target.append( html );
-} );
 }
 
 function adminBlockedDates() {
@@ -89,7 +75,6 @@ $( this ).closest( '.resort-blocked-row' ).remove();
 $( function() {
 initDatepicker();
 $( document.body ).on( 'input change', '#resort_booking_accommodation, #resort_booking_adults, #resort_booking_children, input[name="resort_payment_option"]', syncToSession );
-$( document.body ).on( 'updated_checkout', reloadSummary );
 if ( $( '.resort-booking-checkout' ).length ) {
 triggerOnLoad();
 }

@@ -31,8 +31,7 @@ add_filter( 'woocommerce_available_payment_gateways', array( $this, 'filter_gate
 add_action( 'woocommerce_checkout_order_processed', array( $this, 'adjust_order_status' ), 10, 3 );
 add_action( 'wp_ajax_resort_save_booking_session', array( $this, 'ajax_save_booking_session' ) );
 add_action( 'wp_ajax_nopriv_resort_save_booking_session', array( $this, 'ajax_save_booking_session' ) );
-add_action( 'wp_ajax_reload_booking_summary', array( $this, 'ajax_reload_booking_summary' ) );
-add_action( 'wp_ajax_nopriv_reload_booking_summary', array( $this, 'ajax_reload_booking_summary' ) );
+add_filter( 'woocommerce_update_order_review_fragments', array( $this, 'add_remaining_balance_fragment' ) );
 }
 
 /**
@@ -153,7 +152,7 @@ public function render_checkout_fields( $checkout ) {
 	</div>
 
         </div>
-        <div class="resort-summary-target"></div>
+        <div class="resort-summary-target"><?php echo wp_kses_post( $this->get_remaining_balance_markup() ); ?></div>
 <?php
 }
 
@@ -401,28 +400,12 @@ wp_send_json_success();
 }
 
 /**
- * AJAX: reload summary.
+ * Expose remaining balance HTML for checkout fragments.
  */
-    public function ajax_reload_booking_summary() {
-        if ( WC()->cart ) {
-            WC()->cart->calculate_totals();
-        }
+    public function add_remaining_balance_fragment( $fragments ) {
+        $fragments['.resort-summary-target'] = '<div class="resort-summary-target">' . wp_kses_post( $this->get_remaining_balance_markup() ) . '</div>';
 
-        $product   = $this->get_cart_product();
-        $amounts   = $product ? $this->get_booking_amounts( $product, true ) : array();
-        $total     = isset( $amounts['total'] ) ? $amounts['total'] : WC()->session->get( 'resort_total_amount', 0 );
-        $remaining = isset( $amounts['remaining'] ) ? $amounts['remaining'] : WC()->session->get( 'resort_remaining_balance', 0 );
-        
-        $output = '';
-        if ( $remaining > 0 ) {
-            $output .= '<div class="resort-summary">' . sprintf( __( 'Remaining balance: %s', 'resort-booking' ), wc_price( $remaining ) ) . '</div>';
-            $output .= '<div class="resort-summary">' . sprintf( __( 'Total amount: %s', 'resort-booking' ), wc_price( $total ) ) . '</div>';
-        } else {
-            $output .= '<div class="resort-summary">' . sprintf( __( 'Total amount: %s', 'resort-booking' ), wc_price( $total ) ) . '</div>';
-        }
-        
-        echo wp_kses_post( $output );
-        die();
+        return $fragments;
     }
 
     /**
@@ -449,7 +432,7 @@ wp_send_json_success();
         }
 
         // Booking line prices are zeroed in maybe_zero_cart_price() to avoid quantity scaling.
-        $adults        = absint( WC()->session->get( 'resort_booking_adults', 1 ) );
+        $adults        = absint( WC()->session->get( 'resort_booking_adults', 0 ) );
         $children      = absint( WC()->session->get( 'resort_booking_children', 0 ) );
         $selected      = sanitize_text_field( WC()->session->get( 'resort_booking_accommodation', '' ) );
         $default_accom = $has_forced_date && ! empty( $accoms ) && isset( $accoms[0]['name'] ) ? $accoms[0]['name'] : '';
@@ -504,6 +487,23 @@ wp_send_json_success();
                 'fee'       => $fee,
                 'remaining' => $remaining,
         );
+    }
+
+    /**
+     * Build remaining balance markup for checkout.
+     *
+     * @return string
+     */
+    private function get_remaining_balance_markup() {
+        $product   = $this->get_cart_product();
+        $amounts   = $product ? $this->get_booking_amounts( $product, true ) : array();
+        $remaining = isset( $amounts['remaining'] ) ? floatval( $amounts['remaining'] ) : floatval( WC()->session->get( 'resort_remaining_balance', 0 ) );
+
+        if ( $remaining <= 0 ) {
+            return '';
+        }
+
+        return '<p class="resort-remaining resort-summary"><span class="resort-summary-label">' . esc_html__( 'Remaining balance:', 'resort-booking' ) . '</span> ' . wc_price( $remaining ) . '</p>';
     }
 
 /**
